@@ -424,7 +424,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
         _dirty = false;
         _loading = false;
       });
-      if (mounted) {
+      if (mounted) {  
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Saved ${current.source.fileName}')),
         );

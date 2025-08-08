@@ -1,53 +1,60 @@
 # File Vault
-A simple Flutter desktop/web app showcasing a split-pane layout to browse a vault folder of `.fva` files on the left and view decrypted contents on the right. Decryption is stubbed and performed in-memory only.
 
-## Key points
+A secure and modern Flutter application for managing and encrypting files on Windows.
 
-- Material 3 theming enabled (light/dark).
-- Select a vault folder via the toolbar or the welcome screen.
-- Lists only `.fva` files.
-- Clicking a file "decrypts" it via `Future<String> decryptFile(File file)`, stores content only in memory, and displays it. Nothing is written to disk.
-- Uses `file_picker`, `path`, and `dart:io`.
-
-## Run (Windows desktop)
-
-- Ensure Flutter is set up for Windows: `flutter config --enable-windows-desktop`
-- Run: `flutter run -d windows`
-
-## Notes
-
-- Replace the `decryptFile` implementation in `lib/main.dart` with your real decryption.
-- Keep decrypted data ephemeral; do not persist to disk.
-
-Basic Flutter app scaffolded for desktop (Windows, Linux, macOS) and Web using Material 3.
-
-## Run
-
-- Windows: `flutter run -d windows`
-- Linux: `flutter run -d linux`
-- macOS: `flutter run -d macos`
-- Web: `flutter run -d chrome`
-
-If a platform device isn't listed, ensure it's enabled:
-
-```
-flutter config --enable-windows-desktop --enable-linux-desktop --enable-macos-desktop --enable-web
-```
-
-## Notes
-
-- Material 3 is enabled via `ThemeData(useMaterial3: true)`.
-- Replace the placeholder home screen with your app content.
+## Features
+- Secure file storage and encryption
+- User-friendly interface
+- Cross-platform ready (Windows, with potential for other platforms)
+- Fast search and organization
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Prerequisites
+- [Flutter](https://flutter.dev/docs/get-started/install) (latest stable)
+- Windows 10/11
 
-A few resources to get you started if this is your first Flutter project:
+### Installation
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/tanguyhardion/file-vault.git
+   cd file-vault
+   ```
+2. Fetch dependencies:
+   ```sh
+   flutter pub get
+   ```
+3. Build the Windows app:
+   ```sh
+   flutter build windows
+   ```
+4. Run the app:
+   ```sh
+   flutter run -d windows
+   ```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Project Structure
+```
+lib/
+  main.dart                # App entry point
+  models/                  # Data models
+  services/                # Business logic & encryption
+  widgets/                 # UI components
+windows/                   # Windows-specific build files
+build/                     # Generated build assets
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Development
+- To clean the build: `flutter clean`
+- To update dependencies: `flutter pub get`
+- To run tests: `flutter test`
+
+## Contributing
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+This project is licensed under the MIT License.
+
+---
+
+For more information, see the [Flutter documentation](https://docs.flutter.dev/).
