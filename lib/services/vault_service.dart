@@ -25,7 +25,9 @@ class VaultService {
       }
     }
     // Sort by name for stable UI
-    entries.sort((a, b) => a.fileName.toLowerCase().compareTo(b.fileName.toLowerCase()));
+    entries.sort(
+      (a, b) => a.fileName.toLowerCase().compareTo(b.fileName.toLowerCase()),
+    );
     return entries;
   }
 
@@ -46,7 +48,10 @@ class VaultService {
     final targetPath = p.join(dirPath, '$safeName$fvaExtension');
     final file = File(targetPath);
     await file.writeAsBytes(encryptedBytes, flush: true);
-    return VaultFileEntry(fileName: p.basename(targetPath), fullPath: file.absolute.path);
+    return VaultFileEntry(
+      fileName: p.basename(targetPath),
+      fullPath: file.absolute.path,
+    );
   }
 
   /// Overwrites an existing .fva file with new encrypted bytes.

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-Future<String?> promptForPassword(BuildContext context, {String title = 'Enter password'}) async {
+Future<String?> promptForPassword(
+  BuildContext context, {
+  String title = 'Enter password',
+}) async {
   final controller = TextEditingController();
   String? result;
   await showDialog<void>(
@@ -46,7 +49,7 @@ Future<String?> promptForPassword(BuildContext context, {String title = 'Enter p
                   Navigator.of(ctx).pop();
                 },
                 child: const Text('OK'),
-              )
+              ),
             ],
           ),
         ),
@@ -56,7 +59,11 @@ Future<String?> promptForPassword(BuildContext context, {String title = 'Enter p
   return result;
 }
 
-Future<String?> promptForText(BuildContext context, {String title = 'Enter text', String label = 'Text'}) async {
+Future<String?> promptForText(
+  BuildContext context, {
+  String title = 'Enter text',
+  String label = 'Text',
+}) async {
   final controller = TextEditingController();
   String? result;
   await showDialog<void>(
@@ -65,7 +72,8 @@ Future<String?> promptForText(BuildContext context, {String title = 'Enter text'
       return Shortcuts(
         // Use Ctrl+Enter to submit for multiline input; Enter keeps inserting newlines.
         shortcuts: <LogicalKeySet, Intent>{
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter): const ActivateIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
+              const ActivateIntent(),
         },
         child: Actions(
           actions: <Type, Action<Intent>>{
@@ -98,7 +106,7 @@ Future<String?> promptForText(BuildContext context, {String title = 'Enter text'
                   Navigator.of(ctx).pop();
                 },
                 child: const Text('Save'),
-              )
+              ),
             ],
           ),
         ),
@@ -108,7 +116,11 @@ Future<String?> promptForText(BuildContext context, {String title = 'Enter text'
   return result;
 }
 
-Future<String?> promptForFilename(BuildContext context, {String title = 'New file name', String label = 'File name (without extension)'}) async {
+Future<String?> promptForFilename(
+  BuildContext context, {
+  String title = 'New file name',
+  String label = 'File name (without extension)',
+}) async {
   final controller = TextEditingController();
   String? result;
   await showDialog<void>(
@@ -152,7 +164,7 @@ Future<String?> promptForFilename(BuildContext context, {String title = 'New fil
                   Navigator.of(ctx).pop();
                 },
                 child: const Text('Create'),
-              )
+              ),
             ],
           ),
         ),

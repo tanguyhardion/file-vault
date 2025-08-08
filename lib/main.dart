@@ -1,4 +1,3 @@
-
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,7 +62,8 @@ class _VaultHomePageState extends State<VaultHomePage> {
   Widget build(BuildContext context) {
     return Shortcuts(
       shortcuts: <LogicalKeySet, Intent>{
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS): const _SaveIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS):
+            const _SaveIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -77,55 +77,61 @@ class _VaultHomePageState extends State<VaultHomePage> {
         child: Focus(
           autofocus: true,
           child: Scaffold(
-      appBar: AppBar(
-        title: const Text('File Vault'),
-        actions: [
-          IconButton(
-            tooltip: 'Open vault folder',
-            icon: const Icon(Icons.folder_open),
-            onPressed: _onOpenVault,
-          ),
-          IconButton(
-            tooltip: 'Create new vault',
-            icon: const Icon(Icons.create_new_folder_outlined),
-            onPressed: _onCreateVault,
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Row(
-        children: [
-          // Left pane: file list
-          SizedBox(
-            width: 260,
-            child: Column(
+            appBar: AppBar(
+              title: const Text('File Vault'),
+              actions: [
+                IconButton(
+                  tooltip: 'Open vault folder',
+                  icon: const Icon(Icons.folder_open),
+                  onPressed: _onOpenVault,
+                ),
+                IconButton(
+                  tooltip: 'Create new vault',
+                  icon: const Icon(Icons.create_new_folder_outlined),
+                  onPressed: _onCreateVault,
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+            body: Row(
               children: [
-                _buildVaultHeader(context),
-                Expanded(child: _buildFileList()),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 24), // more margin at bottom
-                  child: FilledButton.icon(
-                    onPressed: (_vaultDir != null && _vaultPassword != null)
-                        ? _onCreateNewFile
-                        : null,
-                    icon: const Icon(Icons.note_add),
-                    label: const Text('New secret file'),
+                // Left pane: file list
+                SizedBox(
+                  width: 260,
+                  child: Column(
+                    children: [
+                      _buildVaultHeader(context),
+                      Expanded(child: _buildFileList()),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          8,
+                          8,
+                          8,
+                          24,
+                        ), // more margin at bottom
+                        child: FilledButton.icon(
+                          onPressed:
+                              (_vaultDir != null && _vaultPassword != null)
+                              ? _onCreateNewFile
+                              : null,
+                          icon: const Icon(Icons.note_add),
+                          label: const Text('New secret file'),
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                const VerticalDivider(width: 1),
+                // Main view
+                Expanded(
+                  child: _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _openedContent == null
+                      ? _buildEmptyState()
+                      : _buildContentView(),
                 ),
               ],
             ),
-          ),
-          const VerticalDivider(width: 1),
-          // Main view
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _openedContent == null
-                    ? _buildEmptyState()
-                    : _buildContentView(),
-          ),
-        ],
-      ),
           ),
         ),
       ),
@@ -138,7 +144,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
     return ListTile(
       title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(dir ?? 'Open or create a vault'),
-    // ...existing code...
+      // ...existing code...
     );
   }
 
@@ -152,9 +158,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
       );
     }
     if (_files.isEmpty) {
-      return const Center(
-        child: Text('No .fva files in this vault'),
-      );
+      return const Center(child: Text('No .fva files in this vault'));
     }
     return ListView.separated(
       itemCount: _files.length,
@@ -236,15 +240,13 @@ class _VaultHomePageState extends State<VaultHomePage> {
               maxLines: null,
               minLines: null,
               textAlignVertical: TextAlignVertical.top,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(border: OutlineInputBorder()),
               style: const TextStyle(fontFamily: 'monospace'),
               onChanged: (_) {
                 if (!_dirty) {
                   setState(() => _dirty = true);
                 }
-              }
+              },
             ),
           ),
         ],
@@ -254,7 +256,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
 
   Future<void> _onOpenVault() async {
     try {
-  final dir = await getDirectoryPath();
+      final dir = await getDirectoryPath();
       if (dir == null) return;
       final pw = await promptForPassword(context, title: 'Vault password');
       if (pw == null || pw.isEmpty) return;
@@ -279,18 +281,21 @@ class _VaultHomePageState extends State<VaultHomePage> {
         _status = 'Error: $e';
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to open vault: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to open vault: $e')));
       }
     }
   }
 
   Future<void> _onCreateVault() async {
     try {
-  final dir = await getDirectoryPath();
+      final dir = await getDirectoryPath();
       if (dir == null) return;
-      final pw = await promptForPassword(context, title: 'Set a password for this vault');
+      final pw = await promptForPassword(
+        context,
+        title: 'Set a password for this vault',
+      );
       if (pw == null || pw.isEmpty) return;
 
       setState(() {
@@ -315,12 +320,17 @@ class _VaultHomePageState extends State<VaultHomePage> {
     });
     try {
       final bytes = await VaultService.readVaultFileBytes(file.fullPath);
-      final text = await CryptoService.decryptToString(data: bytes, password: _vaultPassword!);
+      final text = await CryptoService.decryptToString(
+        data: bytes,
+        password: _vaultPassword!,
+      );
       setState(() {
-  _openedContent = DecryptedFileContent(content: text, source: file);
-  _editorController.text = text;
-  _editorController.selection = TextSelection.collapsed(offset: text.length);
-  _dirty = false;
+        _openedContent = DecryptedFileContent(content: text, source: file);
+        _editorController.text = text;
+        _editorController.selection = TextSelection.collapsed(
+          offset: text.length,
+        );
+        _dirty = false;
         _loading = false;
         _status = 'Decrypted';
       });
@@ -330,9 +340,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
         _status = 'Error: $e';
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to decrypt: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to decrypt: $e')));
       }
     }
   }
@@ -343,7 +353,11 @@ class _VaultHomePageState extends State<VaultHomePage> {
     final name = await promptForFilename(context);
     if (name == null || name.trim().isEmpty) return;
 
-    final content = await promptForText(context, title: 'New file content', label: 'Content');
+    final content = await promptForText(
+      context,
+      title: 'New file content',
+      label: 'Content',
+    );
     if (content == null) return;
 
     setState(() {
@@ -367,7 +381,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
         _files = files;
         _openedContent = DecryptedFileContent(content: content, source: entry);
         _editorController.text = content;
-        _editorController.selection = TextSelection.collapsed(offset: content.length);
+        _editorController.selection = TextSelection.collapsed(
+          offset: content.length,
+        );
         _dirty = false;
         _loading = false;
         _status = 'File saved and loaded';
@@ -378,9 +394,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
         _status = 'Error: $e';
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     }
   }
@@ -397,13 +413,19 @@ class _VaultHomePageState extends State<VaultHomePage> {
     });
 
     try {
-      final encrypted = await CryptoService.encryptString(content: updatedText, password: pw);
+      final encrypted = await CryptoService.encryptString(
+        content: updatedText,
+        password: pw,
+      );
       await VaultService.overwriteVaultFileBytes(
         fullPath: current.source.fullPath,
         encryptedBytes: encrypted,
       );
       setState(() {
-        _openedContent = DecryptedFileContent(content: updatedText, source: current.source);
+        _openedContent = DecryptedFileContent(
+          content: updatedText,
+          source: current.source,
+        );
         _dirty = false;
         _loading = false;
         _status = 'Saved';
@@ -419,15 +441,18 @@ class _VaultHomePageState extends State<VaultHomePage> {
         _status = 'Error: $e';
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     }
   }
 
   void _handleSaveShortcut() {
-    if (_vaultPassword != null && !_loading && _openedContent != null && _dirty) {
+    if (_vaultPassword != null &&
+        !_loading &&
+        _openedContent != null &&
+        _dirty) {
       _onSaveCurrentFile();
     }
   }

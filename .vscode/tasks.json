@@ -10,14 +10,6 @@
       "group": "build"
     },
     {
-      "label": "Run Flutter (Web)",
-      "type": "shell",
-      "command": "flutter run -d web",
-      "isBackground": false,
-      "problemMatcher": [],
-      "group": "build"
-    },
-    {
       "label": "Flutter Clean",
       "type": "shell",
       "command": "flutter clean",
@@ -34,9 +26,9 @@
       "group": "build"
     },
     {
-      "label": "Build All Flutter Targets",
+      "label": "Build Windows",
       "type": "shell",
-      "command": "flutter build windows && flutter build web",
+      "command": "flutter build windows",
       "isBackground": false,
       "group": "build"
     }

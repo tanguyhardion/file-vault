@@ -49,8 +49,12 @@ class CryptoService {
     );
 
     // Compose container: magic | salt | nonce | ciphertext | mac
-    final totalLength = 4 + _saltLength + _nonceLength +
-        secretBox.cipherText.length + _macLength;
+    final totalLength =
+        4 +
+        _saltLength +
+        _nonceLength +
+        secretBox.cipherText.length +
+        _macLength;
     final out = Uint8List(totalLength);
     var offset = 0;
 
