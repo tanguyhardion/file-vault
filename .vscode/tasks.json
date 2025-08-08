@@ -26,7 +26,7 @@
       "group": "build"
     },
     {
-      "label": "Build Windows",
+      "label": "Build Flutter (Windows)",
       "type": "shell",
       "command": "flutter build windows",
       "isBackground": false,
