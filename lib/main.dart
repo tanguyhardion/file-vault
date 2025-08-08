@@ -48,7 +48,6 @@ class _VaultHomePageState extends State<VaultHomePage> {
   List<VaultFileEntry> _files = [];
   DecryptedFileContent? _openedContent;
   bool _loading = false;
-  String? _status;
   final TextEditingController _editorController = TextEditingController();
   bool _dirty = false;
 
@@ -162,7 +161,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
     }
     return ListView.separated(
       itemCount: _files.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final f = _files[index];
         final isOpen = _openedContent?.source.fullPath == f.fullPath;
@@ -257,30 +256,36 @@ class _VaultHomePageState extends State<VaultHomePage> {
   Future<void> _onOpenVault() async {
     try {
       final dir = await getDirectoryPath();
-      if (dir == null) return;
-      final pw = await promptForPassword(context, title: 'Vault password');
-      if (pw == null || pw.isEmpty) return;
+      if (!mounted || dir == null) return;
 
-      setState(() {
-        _vaultDir = dir;
-        _vaultPassword = pw;
-        _openedContent = null;
-        _loading = true;
-        _status = 'Opening vault...';
-      });
+      // Prompt for password in a local function to avoid context across async gap
+      String? pw;
+      if (mounted) {
+        pw = await promptForPassword(context, title: 'Vault password');
+      }
+      if (!mounted || pw == null || pw.isEmpty) return;
+
+      if (mounted) {
+        setState(() {
+          _vaultDir = dir;
+          _vaultPassword = pw;
+          _openedContent = null;
+          _loading = true;
+        });
+      }
 
       final files = await VaultService.listVaultFiles(dir);
-      setState(() {
-        _files = files;
-        _loading = false;
-        _status = 'Vault opened: ${files.length} file(s)';
-      });
-    } catch (e) {
-      setState(() {
-        _loading = false;
-        _status = 'Error: $e';
-      });
       if (mounted) {
+        setState(() {
+          _files = files;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to open vault: $e')));
@@ -303,12 +308,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
         _vaultPassword = pw;
         _files = [];
         _openedContent = null;
-        _status = 'New vault ready';
       });
     } catch (e) {
-      setState(() {
-        _status = 'Error: $e';
-      });
+      setState(() {});
     }
   }
 
@@ -316,7 +318,6 @@ class _VaultHomePageState extends State<VaultHomePage> {
     if (_vaultPassword == null) return;
     setState(() {
       _loading = true;
-      _status = 'Decrypting ${file.fileName}...';
     });
     try {
       final bytes = await VaultService.readVaultFileBytes(file.fullPath);
@@ -332,12 +333,10 @@ class _VaultHomePageState extends State<VaultHomePage> {
         );
         _dirty = false;
         _loading = false;
-        _status = 'Decrypted';
       });
     } catch (e) {
       setState(() {
         _loading = false;
-        _status = 'Error: $e';
       });
       if (mounted) {
         ScaffoldMessenger.of(
@@ -362,7 +361,6 @@ class _VaultHomePageState extends State<VaultHomePage> {
 
     setState(() {
       _loading = true;
-      _status = 'Encrypting new file...';
     });
 
     try {
@@ -386,12 +384,10 @@ class _VaultHomePageState extends State<VaultHomePage> {
         );
         _dirty = false;
         _loading = false;
-        _status = 'File saved and loaded';
       });
     } catch (e) {
       setState(() {
         _loading = false;
-        _status = 'Error: $e';
       });
       if (mounted) {
         ScaffoldMessenger.of(
@@ -409,7 +405,6 @@ class _VaultHomePageState extends State<VaultHomePage> {
 
     setState(() {
       _loading = true;
-      _status = 'Saving ${current.source.fileName}...';
     });
 
     try {
@@ -428,7 +423,6 @@ class _VaultHomePageState extends State<VaultHomePage> {
         );
         _dirty = false;
         _loading = false;
-        _status = 'Saved';
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -438,7 +432,6 @@ class _VaultHomePageState extends State<VaultHomePage> {
     } catch (e) {
       setState(() {
         _loading = false;
-        _status = 'Error: $e';
       });
       if (mounted) {
         ScaffoldMessenger.of(
