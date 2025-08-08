@@ -1,23 +1,44 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "Run Flutter (Windows)",
-			"type": "shell",
-			"command": "flutter run -d windows",
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "build"
-		},
-		{
-			"label": "Flutter pub get",
-			"type": "shell",
-			"command": "flutter pub get",
-			"isBackground": false,
-			"problemMatcher": [
-				"$flutter"
-			],
-			"group": "build"
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Flutter (Windows)",
+      "type": "shell",
+      "command": "flutter run -d windows",
+      "isBackground": false,
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Run Flutter (Web)",
+      "type": "shell",
+      "command": "flutter run -d web",
+      "isBackground": false,
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Flutter Clean",
+      "type": "shell",
+      "command": "flutter clean",
+      "isBackground": false,
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Flutter pub get",
+      "type": "shell",
+      "command": "flutter pub get",
+      "isBackground": false,
+      "problemMatcher": ["$flutter"],
+      "group": "build"
+    },
+    {
+      "label": "Build All Flutter Targets",
+      "type": "shell",
+      "command": "flutter build windows && flutter build web",
+      "isBackground": false,
+      "group": "build"
+    }
+  ]
 }

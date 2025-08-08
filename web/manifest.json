@@ -1,6 +1,6 @@
 {
-    "name": "file_vault_app_tmp",
-    "short_name": "file_vault_app_tmp",
+    "name": "file_vault",
+    "short_name": "file_vault",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

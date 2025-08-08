@@ -4,104 +4,70 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 
 import '../models/vault_models.dart';
-import 'vault_crypto.dart';
 
-/// Vault file format (v1):
-/// [0..3]   magic bytes: 0x46 0x56 0x41 0x01 ("FVA\x01")
-/// [4..7]   u32 headerLen (little-endian)
-/// [8..8+N) header json bytes (utf8) - non-sensitive meta
-/// [..end]  encrypted payload: salt(16) | nonce(12) | ciphertext | tag(16)
 class VaultService {
-  Future<void> saveVault({
-    required String vaultPath,
-    required List<VaultEntry> entries,
-    required String password,
-  }) async {
-    // Serialize payload (JSON of entries)
-    final payload = VaultPayload(entries: entries).toBytes();
-    final enc = await VaultCrypto.encrypt(payload, password);
+  static const fvaExtension = '.fva';
 
-    final header = VaultHeaderMeta(
-      app: 'File Vault',
-      createdAtEpochMs: DateTime.now().millisecondsSinceEpoch,
-    ).toBytes();
-
-    final headerLen = header.length;
-    final headerLenLE = Uint8List(4)
-      ..buffer.asByteData().setUint32(0, headerLen, Endian.little);
-
-    final fileBytes = <int>[]
-      ..addAll(VaultMagic.magicBytes)
-      ..addAll(headerLenLE)
-      ..addAll(header)
-      ..addAll(enc);
-
-    final file = File(vaultPath);
-    await file.writeAsBytes(fileBytes, flush: true);
-  }
-
-  Future<List<VaultEntry>> loadVault({
-    required String vaultPath,
-    required String password,
-  }) async {
-    final file = File(vaultPath);
-    final bytes = await file.readAsBytes();
-    if (bytes.length < 8) {
-      throw StateError('File too small');
-    }
-    // Check magic
-    for (int i = 0; i < VaultMagic.magicBytes.length; i++) {
-      if (bytes[i] != VaultMagic.magicBytes[i]) {
-        throw StateError('Not a valid .fva file');
-      }
-    }
-    // Header size
-    final headerLen = ByteData.sublistView(Uint8List.fromList(bytes.sublist(4, 8))).getUint32(0, Endian.little);
-    final headerStart = 8;
-    final headerEnd = headerStart + headerLen;
-    if (headerEnd > bytes.length) {
-      throw StateError('Invalid header length');
-    }
-    final headerBytes = bytes.sublist(headerStart, headerEnd);
-    // Parse, but we do nothing with it beyond validation
-    VaultHeaderMeta.fromBytes(headerBytes);
-
-    final encrypted = bytes.sublist(headerEnd);
-    final plain = await VaultCrypto.decrypt(encrypted, password);
-    final payload = VaultPayload.fromBytes(plain);
-    return payload.entries;
-  }
-
-  /// Build entries from a directory recursively
-  Future<List<VaultEntry>> collectEntriesFromDirectory(String dirPath) async {
+  /// Lists .fva files in a directory (non-recursive).
+  static Future<List<VaultFileEntry>> listVaultFiles(String dirPath) async {
     final dir = Directory(dirPath);
-    if (!await dir.exists()) {
-      throw ArgumentError('Directory not found: $dirPath');
-    }
-    final List<VaultEntry> result = [];
-    await for (final entity in dir.list(recursive: true, followLinks: false)) {
-      if (entity is File) {
-        final rel = p.relative(entity.path, from: dirPath);
-        final data = await entity.readAsBytes();
-        result.add(VaultEntry(path: rel.replaceAll('\\', '/'), data: data));
+    if (!await dir.exists()) return [];
+
+    final entries = <VaultFileEntry>[];
+    await for (final ent in dir.list(recursive: false, followLinks: false)) {
+      if (ent is File && p.extension(ent.path).toLowerCase() == fvaExtension) {
+        entries.add(
+          VaultFileEntry(
+            fileName: p.basename(ent.path),
+            fullPath: ent.absolute.path,
+          ),
+        );
       }
     }
-    return result;
+    // Sort by name for stable UI
+    entries.sort((a, b) => a.fileName.toLowerCase().compareTo(b.fileName.toLowerCase()));
+    return entries;
   }
 
-  /// Extract entries to a directory; returns count of written files
-  Future<int> extractEntriesToDirectory(List<VaultEntry> entries, String outDir) async {
-    int count = 0;
-    for (final e in entries) {
-      final outPath = p.join(outDir, e.path);
-      final parent = Directory(p.dirname(outPath));
-      if (!await parent.exists()) {
-        await parent.create(recursive: true);
-      }
-      final f = File(outPath);
-      await f.writeAsBytes(e.data, flush: true);
-      count++;
+  /// Reads raw bytes of an .fva file strictly in-memory.
+  static Future<Uint8List> readVaultFileBytes(String fullPath) async {
+    final file = File(fullPath);
+    return await file.readAsBytes();
+  }
+
+  /// Writes encrypted bytes to a new .fva file in the vault dir.
+  /// Returns the created VaultFileEntry.
+  static Future<VaultFileEntry> writeVaultFileBytes({
+    required String dirPath,
+    required String fileNameWithoutExt,
+    required Uint8List encryptedBytes,
+  }) async {
+    final safeName = _sanitizeFileName(fileNameWithoutExt);
+    final targetPath = p.join(dirPath, '$safeName$fvaExtension');
+    final file = File(targetPath);
+    await file.writeAsBytes(encryptedBytes, flush: true);
+    return VaultFileEntry(fileName: p.basename(targetPath), fullPath: file.absolute.path);
+  }
+
+  /// Overwrites an existing .fva file with new encrypted bytes.
+  static Future<void> overwriteVaultFileBytes({
+    required String fullPath,
+    required Uint8List encryptedBytes,
+  }) async {
+    final file = File(fullPath);
+    await file.writeAsBytes(encryptedBytes, flush: true);
+  }
+
+  static String _sanitizeFileName(String input) {
+    var name = input.trim();
+    if (name.isEmpty) name = 'untitled';
+    // Basic invalid chars for Windows and others
+    const invalid = ['\\', '/', ':', '*', '?', '"', '<', '>', '|'];
+    for (final ch in invalid) {
+      name = name.replaceAll(ch, '_');
     }
-    return count;
+    // Remove trailing dots/spaces
+    name = name.replaceAll(RegExp(r'[ .]+$'), '');
+    return name.isEmpty ? 'untitled' : name;
   }
 }

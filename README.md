@@ -1,4 +1,23 @@
 # File Vault
+A simple Flutter desktop/web app showcasing a split-pane layout to browse a vault folder of `.fva` files on the left and view decrypted contents on the right. Decryption is stubbed and performed in-memory only.
+
+## Key points
+
+- Material 3 theming enabled (light/dark).
+- Select a vault folder via the toolbar or the welcome screen.
+- Lists only `.fva` files.
+- Clicking a file "decrypts" it via `Future<String> decryptFile(File file)`, stores content only in memory, and displays it. Nothing is written to disk.
+- Uses `file_picker`, `path`, and `dart:io`.
+
+## Run (Windows desktop)
+
+- Ensure Flutter is set up for Windows: `flutter config --enable-windows-desktop`
+- Run: `flutter run -d windows`
+
+## Notes
+
+- Replace the `decryptFile` implementation in `lib/main.dart` with your real decryption.
+- Keep decrypted data ephemeral; do not persist to disk.
 
 Basic Flutter app scaffolded for desktop (Windows, Linux, macOS) and Web using Material 3.
 
