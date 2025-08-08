@@ -70,7 +70,7 @@ Future<String?> promptForText(
     context: context,
     builder: (ctx) {
       return Shortcuts(
-        // Use Ctrl+Enter to submit for multiline input; Enter keeps inserting newlines.
+  // Ctrl+Enter submits for multiline input; Enter inserts newlines.
         shortcuts: <LogicalKeySet, Intent>{
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
               const ActivateIntent(),
@@ -186,7 +186,9 @@ Future<bool> confirmDeletion(
     builder: (ctx) {
       return AlertDialog(
         title: Text(title),
-        content: Text('Are you sure you want to delete "$fileName"? This cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete "$fileName"? This cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),

@@ -1,48 +1,51 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "Run Flutter (Windows)",
-			"type": "shell",
-			"command": "flutter run -d windows",
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "build"
-		},
-		{
-			"label": "Flutter Clean",
-			"type": "shell",
-			"command": "flutter clean",
-			"isBackground": false,
-			"problemMatcher": [],
-			"group": "build"
-		},
-		{
-			"label": "Flutter pub get",
-			"type": "shell",
-			"command": "flutter pub get",
-			"isBackground": false,
-			"problemMatcher": [
-				"$flutter"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Build Flutter (Windows)",
-			"type": "shell",
-			"command": "flutter build windows",
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "Flutter Analyze",
-			"type": "shell",
-			"command": "flutter analyze",
-			"isBackground": false,
-			"problemMatcher": [
-				"$dart"
-			],
-			"group": "build"
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Flutter Clean",
+      "type": "shell",
+      "command": "flutter clean",
+      "isBackground": false,
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Flutter pub get",
+      "type": "shell",
+      "command": "flutter pub get",
+      "isBackground": false,
+      "problemMatcher": ["$flutter"],
+      "group": "build"
+    },
+    {
+      "label": "Flutter Analyze",
+      "type": "shell",
+      "command": "flutter analyze",
+      "isBackground": false,
+      "problemMatcher": ["$dart"],
+      "group": "build"
+    },
+    {
+      "label": "Flutter Test",
+      "type": "shell",
+      "command": "flutter test",
+      "isBackground": false,
+      "group": "build"
+    },
+    {
+      "label": "Build Flutter (Windows)",
+      "type": "shell",
+      "command": "flutter build windows",
+      "isBackground": false,
+      "group": "build"
+    },
+    {
+      "label": "Run Flutter (Windows)",
+      "type": "shell",
+      "command": "flutter run -d windows",
+      "isBackground": false,
+      "problemMatcher": [],
+      "group": "build"
+    }
+  ]
 }

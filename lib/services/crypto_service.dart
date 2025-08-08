@@ -32,11 +32,14 @@ class CryptoService {
   static Future<Uint8List> encryptString({
     required String content,
     required String password,
+    List<int>? saltOverride,
   }) async {
     final contentBytes = utf8.encode(content);
 
     // Generate salt and nonce.
-    final salt = _randomBytes(_saltLength);
+    final salt = (saltOverride != null && saltOverride.length == _saltLength)
+        ? Uint8List.fromList(saltOverride)
+        : _randomBytes(_saltLength);
     final nonce = _aesGcm.newNonce(); // 12 bytes
 
     // Derive key via PBKDF2-HMAC-SHA256

@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 
 import '../models/vault_models.dart';
 import '../services/crypto_service.dart';
+import '../services/crypto_worker.dart';
+import '../services/content_cache.dart';
 import '../services/vault_service.dart';
 import '../widgets/dialogs.dart';
 import '../shortcuts/save_intent.dart';
@@ -18,7 +20,7 @@ class VaultHomePage extends StatefulWidget {
 
 class _VaultHomePageState extends State<VaultHomePage> {
   String? _vaultDir;
-  String? _vaultPassword; // kept in-memory only for session
+  String? _vaultPassword;
   List<VaultFileEntry> _files = [];
   DecryptedFileContent? _openedContent;
   bool _loading = false;
@@ -87,8 +89,8 @@ class _VaultHomePageState extends State<VaultHomePage> {
                         child: FilledButton.icon(
                           onPressed:
                               (_vaultDir != null && _vaultPassword != null)
-                                  ? _onCreateNewFile
-                                  : null,
+                              ? _onCreateNewFile
+                              : null,
                           icon: const Icon(Icons.note_add),
                           label: const Text('New secret file'),
                         ),
@@ -102,8 +104,8 @@ class _VaultHomePageState extends State<VaultHomePage> {
                   child: _loading
                       ? const Center(child: CircularProgressIndicator())
                       : _openedContent == null
-                          ? _buildEmptyState()
-                          : _buildContentView(),
+                      ? _buildEmptyState()
+                      : _buildContentView(),
                 ),
               ],
             ),
@@ -212,10 +214,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
               Tooltip(
                 message: 'Save (Ctrl+S)',
                 child: FilledButton.icon(
-                  onPressed:
-                      (_vaultPassword != null && !_loading && _dirty)
-                          ? _onSaveCurrentFile
-                          : null,
+                  onPressed: (_vaultPassword != null && !_loading && _dirty)
+                      ? _onSaveCurrentFile
+                      : null,
                   icon: const Icon(Icons.save),
                   label: const Text('Save'),
                 ),
@@ -317,12 +318,29 @@ class _VaultHomePageState extends State<VaultHomePage> {
       _loading = true;
     });
     try {
+      // Check cache before reading/decrypting
+      final fp = await VaultService.getFingerprint(file.fullPath);
+      final cached = ContentCache.instance.getIfFresh(file.fullPath, fp);
+      if (cached != null) {
+        setState(() {
+          _openedContent = DecryptedFileContent(content: cached, source: file);
+          _editorController.text = cached;
+          _editorController.selection = TextSelection.collapsed(
+            offset: cached.length,
+          );
+          _dirty = false;
+          _loading = false;
+        });
+        return;
+      }
+
       final bytes = await VaultService.readVaultFileBytes(file.fullPath);
       String text;
       if (bytes.isEmpty) {
         text = '';
       } else {
-        text = await CryptoService.decryptToString(
+        // Offload decryption to a background isolate for responsiveness
+        text = await CryptoWorker.decryptToString(
           data: bytes,
           password: _vaultPassword!,
         );
@@ -336,6 +354,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
         _dirty = false;
         _loading = false;
       });
+      // Update cache
+      final fp2 = await VaultService.getFingerprint(file.fullPath);
+      ContentCache.instance.put(file.fullPath, text, fp2);
     } catch (e) {
       setState(() {
         _loading = false;
@@ -402,7 +423,8 @@ class _VaultHomePageState extends State<VaultHomePage> {
     });
 
     try {
-      final encrypted = await CryptoService.encryptString(
+      // Offload encryption to background isolate
+      final encrypted = await CryptoWorker.encryptString(
         content: updatedText,
         password: pw,
       );
@@ -418,6 +440,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
         _dirty = false;
         _loading = false;
       });
+      // Refresh cache with new fingerprint
+      final fp = await VaultService.getFingerprint(current.source.fullPath);
+      ContentCache.instance.put(current.source.fullPath, updatedText, fp);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Saved ${current.source.fileName}')),
@@ -447,7 +472,10 @@ class _VaultHomePageState extends State<VaultHomePage> {
   Future<void> _onRenameFile(VaultFileEntry file) async {
     final dir = _vaultDir;
     if (dir == null) return;
-    final currentNameNoExt = file.fileName.replaceAll(RegExp(r'\.fva$', caseSensitive: false), '');
+    final currentNameNoExt = file.fileName.replaceAll(
+      RegExp(r'\.fva$', caseSensitive: false),
+      '',
+    );
     final newName = await promptForFilename(
       context,
       title: 'Rename file',
@@ -479,9 +507,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to rename: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to rename: $e')));
       }
     }
   }
@@ -489,10 +517,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
   Future<void> _onDeleteFile(VaultFileEntry file) async {
     final dir = _vaultDir;
     if (dir == null) return;
-    final confirm = await confirmDeletion(
-      context,
-      fileName: file.fileName,
-    );
+    final confirm = await confirmDeletion(context, fileName: file.fileName);
     if (!confirm) return;
     setState(() => _loading = true);
     try {
@@ -510,9 +535,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
       }
     }
   }
@@ -540,11 +565,15 @@ class _FileItemMenu extends StatelessWidget {
         onPressed: () async {
           onOpen();
           final RenderBox button = btnCtx.findRenderObject() as RenderBox;
-          final RenderBox overlay = Overlay.of(btnCtx).context.findRenderObject() as RenderBox;
+          final RenderBox overlay =
+              Overlay.of(btnCtx).context.findRenderObject() as RenderBox;
           final RelativeRect position = RelativeRect.fromRect(
             Rect.fromPoints(
               button.localToGlobal(Offset.zero, ancestor: overlay),
-              button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+              button.localToGlobal(
+                button.size.bottomRight(Offset.zero),
+                ancestor: overlay,
+              ),
             ),
             Offset.zero & overlay.size,
           );

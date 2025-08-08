@@ -8,6 +8,12 @@ import '../models/vault_models.dart';
 class VaultService {
   static const fvaExtension = '.fva';
 
+  /// On-disk fingerprint used to detect changes without hashing bytes.
+  static Future<FileFingerprint> getFingerprint(String fullPath) async {
+    final stat = await File(fullPath).stat();
+    return FileFingerprint(length: stat.size, modified: stat.modified);
+  }
+
   /// Lists .fva files in a directory (non-recursive).
   static Future<List<VaultFileEntry>> listVaultFiles(String dirPath) async {
     final dir = Directory(dirPath);
@@ -85,7 +91,10 @@ class VaultService {
     }
     final target = File(newPath);
     if (await target.exists()) {
-      throw FileSystemException('A file with that name already exists', newPath);
+      throw FileSystemException(
+        'A file with that name already exists',
+        newPath,
+      );
     }
     final renamed = await file.rename(newPath);
     return VaultFileEntry(
@@ -114,4 +123,25 @@ class VaultService {
     name = name.replaceAll(RegExp(r'[ .]+$'), '');
     return name.isEmpty ? 'untitled' : name;
   }
+}
+
+class FileFingerprint {
+  final int length;
+  final DateTime modified;
+
+  const FileFingerprint({required this.length, required this.modified});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FileFingerprint &&
+          runtimeType == other.runtimeType &&
+          length == other.length &&
+          modified.isAtSameMomentAs(other.modified);
+
+  @override
+  int get hashCode => Object.hash(length, modified.millisecondsSinceEpoch);
+
+  @override
+  String toString() => 'FileFingerprint(len=$length, mod=$modified)';
 }

@@ -9,7 +9,6 @@ class FileVaultApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'File Vault',
-      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.teal,
