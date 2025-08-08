@@ -8,6 +8,16 @@
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "Flutter pub get",
+			"type": "shell",
+			"command": "flutter pub get",
+			"isBackground": false,
+			"problemMatcher": [
+				"$flutter"
+			],
+			"group": "build"
 		}
 	]
 }

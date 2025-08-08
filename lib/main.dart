@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'ui/vault_home.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +17,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'File Vault'),
+  home: const MyHomePage(title: 'File Vault'),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -55,12 +56,7 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: const Center(
-        child: Text(
-          'Welcome to File Vault',
-          style: TextStyle(fontSize: 18),
-        ),
-      ),
+  body: const Center(child: VaultHomePage()),
     );
   }
 }
