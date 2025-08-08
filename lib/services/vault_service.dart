@@ -63,6 +63,45 @@ class VaultService {
     await file.writeAsBytes(encryptedBytes, flush: true);
   }
 
+  /// Renames an existing .fva file to a new sanitized name (without extension).
+  /// Throws [FileSystemException] if the target already exists.
+  static Future<VaultFileEntry> renameVaultFile({
+    required String fullPath,
+    required String newFileNameWithoutExt,
+  }) async {
+    final file = File(fullPath);
+    if (!await file.exists()) {
+      throw FileSystemException('File does not exist', fullPath);
+    }
+    final dirPath = p.dirname(fullPath);
+    final safeName = _sanitizeFileName(newFileNameWithoutExt);
+    final newPath = p.join(dirPath, '$safeName$fvaExtension');
+    if (p.equals(fullPath, newPath)) {
+      // No change in resulting path; return current entry.
+      return VaultFileEntry(
+        fileName: p.basename(newPath),
+        fullPath: file.absolute.path,
+      );
+    }
+    final target = File(newPath);
+    if (await target.exists()) {
+      throw FileSystemException('A file with that name already exists', newPath);
+    }
+    final renamed = await file.rename(newPath);
+    return VaultFileEntry(
+      fileName: p.basename(renamed.path),
+      fullPath: renamed.absolute.path,
+    );
+  }
+
+  /// Deletes an existing .fva file if it exists.
+  static Future<void> deleteVaultFile(String fullPath) async {
+    final file = File(fullPath);
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
+
   static String _sanitizeFileName(String input) {
     var name = input.trim();
     if (name.isEmpty) name = 'untitled';

@@ -105,8 +105,9 @@ class CryptoService {
     offset += _nonceLength;
 
     final cipherTextLen = data.length - offset - _macLength;
-    if (cipherTextLen <= 0) {
-      throw const FormatException('Invalid FVA file: no ciphertext');
+    // Allow zero-length ciphertext (valid for AES-GCM with empty plaintext)
+    if (cipherTextLen < 0) {
+      throw const FormatException('Invalid FVA file: truncated payload');
     }
 
     final cipherText = data.sublist(offset, offset + cipherTextLen);

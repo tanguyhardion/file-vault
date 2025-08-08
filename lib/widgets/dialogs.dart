@@ -120,8 +120,9 @@ Future<String?> promptForFilename(
   BuildContext context, {
   String title = 'New file name',
   String label = 'File name (without extension)',
+  String? initialValue,
 }) async {
-  final controller = TextEditingController();
+  final controller = TextEditingController(text: initialValue ?? '');
   String? result;
   await showDialog<void>(
     context: context,
@@ -163,7 +164,7 @@ Future<String?> promptForFilename(
                   result = controller.text;
                   Navigator.of(ctx).pop();
                 },
-                child: const Text('Create'),
+                child: const Text('OK'),
               ),
             ],
           ),
@@ -172,4 +173,35 @@ Future<String?> promptForFilename(
     },
   );
   return result;
+}
+
+Future<bool> confirmDeletion(
+  BuildContext context, {
+  String title = 'Delete file',
+  required String fileName,
+}) async {
+  var confirm = false;
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) {
+      return AlertDialog(
+        title: Text(title),
+        content: Text('Are you sure you want to delete "$fileName"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonal(
+            onPressed: () {
+              confirm = true;
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      );
+    },
+  );
+  return confirm;
 }
