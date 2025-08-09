@@ -9,6 +9,7 @@ import '../widgets/recent_vault_item.dart';
 import 'vault_controller.dart';
 import 'file_operations_controller.dart';
 import 'search_controller.dart' as vault_search;
+import '../services/content_cache.dart';
 
 class VaultHomePageController extends ChangeNotifier {
   final VaultController vaultController = VaultController();
@@ -148,10 +149,12 @@ class VaultHomePageController extends ChangeNotifier {
   }
 
   void closeVault() {
-    vaultController.closeVault();
-    fileOperationsController.closeFile();
-    searchController.clearSearch();
-    editorController.clear();
+  vaultController.closeVault();
+  fileOperationsController.closeFile();
+  searchController.clearSearch();
+  editorController.clear();
+  // Clear cached decrypted file contents
+  ContentCache.instance.clear();
   }
 
   Future<void> showRecentVaults(BuildContext context) async {
