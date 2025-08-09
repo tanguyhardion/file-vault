@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 
 import '../models/vault_models.dart';
 import '../services/vault_service.dart';
-import '../services/crypto_service.dart';
 import '../services/crypto_worker.dart';
 import '../services/content_cache.dart';
 import 'vault_controller.dart';
@@ -62,9 +61,8 @@ class FileOperationsController extends ChangeNotifier {
       _dirty = false;
       setLoading(false);
 
-      // Update cache
-      final fp2 = await VaultService.getFingerprint(file.fullPath);
-      ContentCache.instance.put(file.fullPath, text, fp2);
+      // Update cache with the same fingerprint we checked earlier
+      ContentCache.instance.put(file.fullPath, text, fp);
     } catch (e) {
       setLoading(false);
       rethrow;
@@ -82,7 +80,7 @@ class FileOperationsController extends ChangeNotifier {
     setLoading(true);
     try {
       // Create file with empty content
-      final Uint8List encrypted = await CryptoService.encryptString(
+      final Uint8List encrypted = await CryptoWorker.encryptString(
         content: '',
         password: password,
       );

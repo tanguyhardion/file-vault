@@ -28,9 +28,8 @@ class FileList extends StatelessWidget {
     if (files.isEmpty) {
       return const Center(child: Text('No secret files in this vault'));
     }
-    return ListView.separated(
+    return ListView.builder(
       itemCount: files.length,
-      separatorBuilder: (context, _) => const SizedBox.shrink(),
       itemBuilder: (context, index) {
         final f = files[index];
         final isOpen = openedContent?.source.fullPath == f.fullPath;

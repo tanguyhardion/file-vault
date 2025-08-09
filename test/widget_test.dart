@@ -7,7 +7,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:file_vault/main.dart';
+import 'package:file_vault/app.dart';
 
 void main() {
   testWidgets('FileVaultApp renders without crashing', (WidgetTester tester) async {

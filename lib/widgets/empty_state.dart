@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import 'recent_vault_item.dart';
 
 
@@ -36,14 +37,14 @@ class EmptyState extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   ...recentVaults.take(5).map((vaultPath) {
-                    final vaultName = vaultPath.split(RegExp(r'[/\\]')).last;
+                    final vaultName = p.basename(vaultPath);
                     return RecentVaultItem(
                       vaultPath: vaultPath,
                       displayName: vaultName,
                       onTap: () => onOpenRecent(vaultPath),
                       showHoverEffect: true,
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),

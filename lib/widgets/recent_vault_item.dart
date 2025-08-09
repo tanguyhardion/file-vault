@@ -38,7 +38,7 @@ class RecentVaultItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(12.0),
         ),
         hoverColor: showHoverEffect 
-            ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
             : null,
       ),
     );

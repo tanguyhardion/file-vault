@@ -1,3 +1,5 @@
+
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../models/vault_models.dart';
@@ -21,9 +23,30 @@ class VaultController extends ChangeNotifier {
     notifyListeners();
   }
 
+  static const String vaultMarkerFile = '.vault_marker';
+
+  Future<bool> _checkVaultMarker(String dir) async {
+    final marker = File('$dir/$vaultMarkerFile');
+    if (!await marker.exists()) return false;
+    final contents = await marker.readAsString();
+    return contents.contains('password_set: true');
+  }
+
+  Future<void> _createVaultMarker(String dir) async {
+    final marker = File('$dir/$vaultMarkerFile');
+    final now = DateTime.now().toUtc().toIso8601String();
+    final contents = 'vault_version: 1\ncreated_at: $now\npassword_set: true\n';
+    await marker.writeAsString(contents, flush: true);
+  }
+
   Future<void> openVault(String dir, String password) async {
     setLoading(true);
     try {
+      // Check marker file
+      final hasMarker = await _checkVaultMarker(dir);
+      if (!hasMarker) {
+        throw Exception('Selected folder is not a valid vault (missing marker file).');
+      }
       _vaultDir = dir;
       _vaultPassword = password;
 
@@ -43,11 +66,12 @@ class VaultController extends ChangeNotifier {
     }
   }
 
-  void createVault(String dir, String password) {
+  Future<void> createVault(String dir, String password) async {
     _vaultDir = dir;
     _vaultPassword = password;
     _files = [];
-    RecentVaultsService.add(dir);
+    await _createVaultMarker(dir);
+    await RecentVaultsService.add(dir);
     notifyListeners();
   }
 

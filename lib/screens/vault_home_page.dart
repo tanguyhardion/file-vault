@@ -101,12 +101,27 @@ class _VaultHomePageState extends State<VaultHomePage> {
         // Left pane: file list
         SizedBox(
           width: 260,
-          child: Column(
+          child: Stack(
             children: [
-              VaultHeader(vaultDir: _controller.vaultController.vaultDir),
-              _buildNewFileButton(),
-              _buildSearchBar(),
-              _buildFileList(),
+              Column(
+                children: [
+                  VaultHeader(vaultDir: _controller.vaultController.vaultDir),
+                  _buildSearchBar(),
+                  Expanded(child: _buildFileList()),
+                ],
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 24, // Space from bottom
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SizedBox(
+                    width: 180, // Set desired button width
+                    child: _buildNewFileButton(),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

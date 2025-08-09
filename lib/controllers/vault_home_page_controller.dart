@@ -57,13 +57,13 @@ class VaultHomePageController extends ChangeNotifier {
 
   Future<void> openVault({BuildContext? context}) async {
     final dir = await getDirectoryPath();
-    if (dir == null) return;
+    if (dir == null || context == null || !context.mounted) return;
     await openVaultAt(dir, context: context);
   }
 
   Future<void> openVaultAt(String dir, {BuildContext? context}) async {
     String? pw;
-    if (context != null) {
+    if (context != null && context.mounted) {
       pw = await promptForPassword(context, title: 'Vault password');
     } else {
       throw ArgumentError('Context is required for password prompt');
@@ -86,7 +86,7 @@ class VaultHomePageController extends ChangeNotifier {
     if (dir == null) return;
 
     String? pw;
-    if (context != null) {
+    if (context != null && context.mounted) {
       pw = await promptForPasswordCreation(
         context,
         title: 'Set a password for this vault',
@@ -96,7 +96,7 @@ class VaultHomePageController extends ChangeNotifier {
     }
     if (pw == null || pw.isEmpty) return;
 
-    vaultController.createVault(dir, pw);
+    await vaultController.createVault(dir, pw);
     fileOperationsController.closeFile();
     searchController.clearSearch();
     editorController.clear();
@@ -150,7 +150,7 @@ class VaultHomePageController extends ChangeNotifier {
       ),
     );
 
-    if (selectedPath != null) {
+    if (selectedPath != null && context.mounted) {
       await openVaultAt(selectedPath, context: context);
     }
   }
