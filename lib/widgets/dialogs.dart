@@ -1,6 +1,125 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+Future<String?> promptForPasswordCreation(
+  BuildContext context, {
+  String title = 'Set a password for this vault',
+}) async {
+  final passwordController = TextEditingController();
+  final confirmController = TextEditingController();
+  String? result;
+  String? errorText;
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return Shortcuts(
+            shortcuts: <LogicalKeySet, Intent>{
+              LogicalKeySet(LogicalKeyboardKey.enter): const ActivateIntent(),
+            },
+            child: Actions(
+              actions: <Type, Action<Intent>>{
+                ActivateIntent: CallbackAction<ActivateIntent>(
+                  onInvoke: (intent) {
+                    if (passwordController.text != confirmController.text) {
+                      setState(() {
+                        errorText = "Passwords do not match";
+                      });
+                      return null;
+                    }
+                    if (passwordController.text.isEmpty) {
+                      setState(() {
+                        errorText = "Password cannot be empty";
+                      });
+                      return null;
+                    }
+                    result = passwordController.text;
+                    Navigator.of(ctx).pop();
+                    return null;
+                  },
+                ),
+              },
+              child: AlertDialog(
+                title: Text(title),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: passwordController,
+                      obscureText: true,
+                      autofocus: true,
+                      decoration: const InputDecoration(labelText: 'Password'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: confirmController,
+                      obscureText: true,
+                      decoration: const InputDecoration(labelText: 'Confirm Password'),
+                      onSubmitted: (_) {
+                        if (passwordController.text != confirmController.text) {
+                          setState(() {
+                            errorText = "Passwords do not match";
+                          });
+                          return;
+                        }
+                        if (passwordController.text.isEmpty) {
+                          setState(() {
+                            errorText = "Password cannot be empty";
+                          });
+                          return;
+                        }
+                        result = passwordController.text;
+                        Navigator.of(ctx).pop();
+                      },
+                    ),
+                    if (errorText != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          errorText!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () {
+                      if (passwordController.text != confirmController.text) {
+                        setState(() {
+                          errorText = "Passwords do not match";
+                        });
+                        return;
+                      }
+                      if (passwordController.text.isEmpty) {
+                        setState(() {
+                          errorText = "Password cannot be empty";
+                        });
+                        return;
+                      }
+                      result = passwordController.text;
+                      Navigator.of(ctx).pop();
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+  return result;
+}
+
 Future<String?> promptForPassword(
   BuildContext context, {
   String title = 'Enter password',

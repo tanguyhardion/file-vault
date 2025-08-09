@@ -26,7 +26,7 @@ class FileList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (files.isEmpty) {
-      return const Center(child: Text('No .fva files in this vault'));
+      return const Center(child: Text('No secret files in this vault'));
     }
     return ListView.separated(
       itemCount: files.length,
