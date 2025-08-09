@@ -10,6 +10,7 @@ import '../services/content_cache.dart';
 import '../services/vault_service.dart';
 import '../widgets/dialogs.dart';
 import '../shortcuts/save_intent.dart';
+import '../services/recent_vaults_service.dart';
 
 class VaultHomePage extends StatefulWidget {
   const VaultHomePage({super.key});
@@ -28,6 +29,13 @@ class _VaultHomePageState extends State<VaultHomePage> {
   bool _dirty = false;
   int? _hoveredIndex;
   int? _menuOpenIndex;
+  List<String> _recentVaults = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecent();
+  }
 
   @override
   void dispose() {
@@ -67,6 +75,17 @@ class _VaultHomePageState extends State<VaultHomePage> {
                   icon: const Icon(Icons.create_new_folder_outlined),
                   onPressed: _onCreateVault,
                 ),
+                IconButton(
+                  tooltip: 'Open recent vaults',
+                  icon: const Icon(Icons.history),
+                  onPressed: _onShowRecentVaults,
+                ),
+                if (_vaultDir != null)
+                  IconButton(
+                    tooltip: 'Close vault',
+                    icon: const Icon(Icons.close),
+                    onPressed: _onCloseVault,
+                  ),
                 const SizedBox(width: 8),
               ],
             ),
@@ -120,7 +139,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
     final name = dir == null ? 'No vault opened' : p.basename(dir);
     return ListTile(
       title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(dir ?? 'Open or create a vault'),
+      subtitle: dir == null ? const Text('Open or create a vault') : Text(dir),
     );
   }
 
@@ -177,10 +196,69 @@ class _VaultHomePageState extends State<VaultHomePage> {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.lock_outline, size: 56),
-          SizedBox(height: 12),
-          Text('Open a vault and select a file to view its content'),
+        children: [
+          const Icon(Icons.lock_outline, size: 56),
+          const SizedBox(height: 12),
+          const Text('Open a vault and select a file to view its content'),
+          if (_recentVaults.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            Container(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Recent Vaults',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12.0),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _recentVaults.length,
+                        itemBuilder: (context, index) {
+                          final path = _recentVaults[index];
+                          final displayName = RecentVaultsService.displayName(
+                            path,
+                          );
+                          final isFirst = index == 0;
+                          final isLast = index == _recentVaults.length - 1;
+
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _onOpenRecent(path),
+                              borderRadius: BorderRadius.vertical(
+                                top: isFirst
+                                    ? const Radius.circular(12.0)
+                                    : Radius.zero,
+                                bottom: isLast
+                                    ? const Radius.circular(12.0)
+                                    : Radius.zero,
+                              ),
+                              child: ListTile(
+                                leading: const Icon(Icons.folder),
+                                title: Text(displayName),
+                                subtitle: Text(
+                                  path,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -249,30 +327,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
     try {
       final dir = await getDirectoryPath();
       if (!mounted || dir == null) return;
-
-      // Prompt for password in a local function to avoid context across async gap
-      String? pw;
-      if (mounted) {
-        pw = await promptForPassword(context, title: 'Vault password');
-      }
-      if (!mounted || pw == null || pw.isEmpty) return;
-
-      if (mounted) {
-        setState(() {
-          _vaultDir = dir;
-          _vaultPassword = pw;
-          _openedContent = null;
-          _loading = true;
-        });
-      }
-
-      final files = await VaultService.listVaultFiles(dir);
-      if (mounted) {
-        setState(() {
-          _files = files;
-          _loading = false;
-        });
-      }
+      await _openVaultAt(dir);
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -283,6 +338,39 @@ class _VaultHomePageState extends State<VaultHomePage> {
         ).showSnackBar(SnackBar(content: Text('Failed to open vault: $e')));
       }
     }
+  }
+
+  Future<void> _onOpenRecent(String dir) async {
+    await _openVaultAt(dir);
+  }
+
+  Future<void> _openVaultAt(String dir) async {
+    // Prompt for password in a local function to avoid context across async gap
+    String? pw;
+    if (mounted) {
+      pw = await promptForPassword(context, title: 'Vault password');
+    }
+    if (!mounted || pw == null || pw.isEmpty) return;
+
+    if (mounted) {
+      setState(() {
+        _vaultDir = dir;
+        _vaultPassword = pw;
+        _openedContent = null;
+        _loading = true;
+      });
+    }
+
+    final files = await VaultService.listVaultFiles(dir);
+    if (mounted) {
+      setState(() {
+        _files = files;
+        _loading = false;
+      });
+    }
+    // Store to recent list
+    await RecentVaultsService.add(dir);
+    await _loadRecent();
   }
 
   Future<void> _onCreateVault() async {
@@ -302,10 +390,76 @@ class _VaultHomePageState extends State<VaultHomePage> {
         _files = [];
         _openedContent = null;
       });
+      // Store to recent list
+      await RecentVaultsService.add(dir);
+      await _loadRecent();
     } catch (e) {
       if (mounted) {
         setState(() {});
       }
+    }
+  }
+
+  Future<void> _loadRecent() async {
+    final list = await RecentVaultsService.getRecent();
+    if (!mounted) return;
+    setState(() => _recentVaults = list);
+  }
+
+  void _onCloseVault() {
+    setState(() {
+      _vaultDir = null;
+      _vaultPassword = null;
+      _files = [];
+      _openedContent = null;
+      _dirty = false;
+    });
+    _editorController.clear();
+  }
+
+  Future<void> _onShowRecentVaults() async {
+    if (_recentVaults.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No recent vaults found')));
+      return;
+    }
+
+    final String? selectedPath = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Recent Vaults'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _recentVaults.length,
+            itemBuilder: (context, index) {
+              final path = _recentVaults[index];
+              final displayName = RecentVaultsService.displayName(path);
+              return ListTile(
+                title: Text(displayName),
+                subtitle: Text(
+                  path,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                onTap: () => Navigator.of(context).pop(path),
+                leading: const Icon(Icons.folder),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedPath != null) {
+      await _onOpenRecent(selectedPath);
     }
   }
 
