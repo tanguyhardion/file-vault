@@ -32,7 +32,7 @@ class VaultController extends ChangeNotifier {
 
       // Store to recent list
       await RecentVaultsService.add(dir);
-      
+
       setLoading(false);
     } catch (e) {
       _vaultDir = null;

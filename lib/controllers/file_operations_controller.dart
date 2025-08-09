@@ -57,7 +57,7 @@ class FileOperationsController extends ChangeNotifier {
           password: password,
         );
       }
-      
+
       _openedContent = DecryptedFileContent(content: text, source: file);
       _dirty = false;
       setLoading(false);
@@ -74,7 +74,7 @@ class FileOperationsController extends ChangeNotifier {
   Future<VaultFileEntry> createNewFile(String name) async {
     final vaultDir = _vaultController.vaultDir;
     final password = _vaultController.vaultPassword;
-    
+
     if (vaultDir == null || password == null) {
       throw Exception('No vault is open');
     }
@@ -94,11 +94,11 @@ class FileOperationsController extends ChangeNotifier {
       );
 
       await _vaultController.refreshFiles();
-      
+
       _openedContent = DecryptedFileContent(content: '', source: entry);
       _dirty = false;
       setLoading(false);
-      
+
       return entry;
     } catch (e) {
       setLoading(false);
@@ -118,12 +118,12 @@ class FileOperationsController extends ChangeNotifier {
         content: content,
         password: password,
       );
-      
+
       await VaultService.overwriteVaultFileBytes(
         fullPath: current.source.fullPath,
         encryptedBytes: encrypted,
       );
-      
+
       _openedContent = DecryptedFileContent(
         content: content,
         source: current.source,
@@ -160,7 +160,7 @@ class FileOperationsController extends ChangeNotifier {
           source: updated,
         );
       }
-      
+
       setLoading(false);
       return updated;
     } catch (e) {
@@ -182,7 +182,7 @@ class FileOperationsController extends ChangeNotifier {
         _openedContent = null;
         _dirty = false;
       }
-      
+
       setLoading(false);
     } catch (e) {
       setLoading(false);

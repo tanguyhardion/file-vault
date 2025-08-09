@@ -4,6 +4,7 @@ import 'package:file_selector/file_selector.dart';
 import '../models/vault_models.dart';
 import '../services/recent_vaults_service.dart';
 import '../widgets/dialogs.dart';
+import '../widgets/recent_vault_item.dart';
 import 'vault_controller.dart';
 import 'file_operations_controller.dart';
 import 'search_controller.dart' as vault_search;
@@ -12,7 +13,7 @@ class VaultHomePageController extends ChangeNotifier {
   final VaultController vaultController = VaultController();
   late final FileOperationsController fileOperationsController;
   late final vault_search.SearchController searchController;
-  
+
   final TextEditingController editorController = TextEditingController();
   List<String> _recentVaults = [];
   int? _hoveredIndex;
@@ -20,12 +21,12 @@ class VaultHomePageController extends ChangeNotifier {
   VaultHomePageController() {
     fileOperationsController = FileOperationsController(vaultController);
     searchController = vault_search.SearchController(vaultController);
-    
+
     // Listen to controllers for updates
     vaultController.addListener(notifyListeners);
     fileOperationsController.addListener(notifyListeners);
     searchController.addListener(notifyListeners);
-    
+
     _loadRecent();
   }
 
@@ -40,7 +41,8 @@ class VaultHomePageController extends ChangeNotifier {
 
   List<String> get recentVaults => _recentVaults;
   int? get hoveredIndex => _hoveredIndex;
-  bool get loading => vaultController.loading || fileOperationsController.loading;
+  bool get loading =>
+      vaultController.loading || fileOperationsController.loading;
 
   void setHoveredIndex(int? index) {
     _hoveredIndex = index;
@@ -82,7 +84,7 @@ class VaultHomePageController extends ChangeNotifier {
   Future<void> createVault({BuildContext? context}) async {
     final dir = await getDirectoryPath();
     if (dir == null) return;
-    
+
     String? pw;
     if (context != null) {
       pw = await promptForPasswordCreation(
@@ -93,7 +95,7 @@ class VaultHomePageController extends ChangeNotifier {
       throw ArgumentError('Context is required for password prompt');
     }
     if (pw == null || pw.isEmpty) return;
-    
+
     vaultController.createVault(dir, pw);
     fileOperationsController.closeFile();
     searchController.clearSearch();
@@ -116,23 +118,25 @@ class VaultHomePageController extends ChangeNotifier {
     final String? selectedPath = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Recent Vaults'),
+        title: Text(
+          'Recent Vaults',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
         content: SizedBox(
-          width: double.maxFinite,
+          width: 400,
           child: ListView.builder(
             shrinkWrap: true,
             itemCount: _recentVaults.length,
             itemBuilder: (context, index) {
               final path = _recentVaults[index];
               final displayName = RecentVaultsService.displayName(path);
-              return ListTile(
-                title: Text(displayName),
-                subtitle: Text(
-                  path,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+              return RecentVaultItem(
+                vaultPath: path,
+                displayName: displayName,
                 onTap: () => Navigator.of(context).pop(path),
-                leading: const Icon(Icons.folder),
+                showHoverEffect: false,
               );
             },
           ),
@@ -155,9 +159,9 @@ class VaultHomePageController extends ChangeNotifier {
     if (fileOperationsController.dirty) {
       await saveCurrentFile();
     }
-    
+
     await fileOperationsController.openFile(file);
-    
+
     final content = fileOperationsController.openedContent;
     if (content != null) {
       editorController.text = content.content;
@@ -174,7 +178,7 @@ class VaultHomePageController extends ChangeNotifier {
     await fileOperationsController.createNewFile(name.trim());
     editorController.text = '';
     editorController.selection = const TextSelection.collapsed(offset: 0);
-    
+
     // Trigger search if there's an active query
     searchController.triggerSearch();
   }
@@ -188,20 +192,20 @@ class VaultHomePageController extends ChangeNotifier {
       RegExp(r'\.fva$', caseSensitive: false),
       '',
     );
-    
+
     final newName = await promptForFilename(
       context,
       title: 'Rename file',
       label: 'New name (without extension)',
       initialValue: currentNameNoExt,
     );
-    
+
     if (newName == null) return;
     final trimmed = newName.trim();
     if (trimmed.isEmpty) return;
 
     await fileOperationsController.renameFile(file, trimmed);
-    
+
     // Trigger search if there's an active query
     searchController.triggerSearch();
   }
@@ -209,13 +213,14 @@ class VaultHomePageController extends ChangeNotifier {
   Future<void> deleteFile(BuildContext context, VaultFileEntry file) async {
     final confirm = await confirmDeletion(context, fileName: file.fileName);
     if (!confirm) return;
-    
+
     await fileOperationsController.deleteFile(file);
-    
-    if (fileOperationsController.openedContent?.source.fullPath == file.fullPath) {
+
+    if (fileOperationsController.openedContent?.source.fullPath ==
+        file.fullPath) {
       editorController.clear();
     }
-    
+
     // Trigger search if there's an active query
     searchController.triggerSearch();
   }

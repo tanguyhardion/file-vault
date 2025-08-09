@@ -51,10 +51,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
         },
         child: Focus(
           autofocus: true,
-          child: Scaffold(
-            appBar: _buildAppBar(),
-            body: _buildBody(),
-          ),
+          child: Scaffold(appBar: _buildAppBar(), body: _buildBody()),
         ),
       ),
     );
@@ -74,10 +71,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
           width: 1,
           height: kToolbarHeight - 32,
           color: Divider.createBorderSide(context).color,
-          margin: const EdgeInsets.symmetric(
-            vertical: 16,
-            horizontal: 6,
-          ),
+          margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
         ),
         // Group: Open vault, Open recent, Close vault
         IconButton(
@@ -118,9 +112,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
         ),
         const VerticalDivider(width: 1),
         // Main view
-        Expanded(
-          child: _buildMainContent(),
-        ),
+        Expanded(child: _buildMainContent()),
       ],
     );
   }
@@ -155,7 +147,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
           decoration: InputDecoration(
             hintText: 'Search files...',
             hintStyle: const TextStyle(fontSize: 14),
-            prefixIcon: _controller.searchController.isSearching 
+            prefixIcon: _controller.searchController.isSearching
                 ? const SizedBox(
                     width: 14,
                     height: 14,
@@ -193,15 +185,14 @@ class _VaultHomePageState extends State<VaultHomePage> {
           ? const Center(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Open a vault folder to see your secret files',
-                ),
+                child: Text('Open a vault folder to see your secret files'),
               ),
             )
           : FileList(
-              files: _controller.searchController.filteredFiles.isNotEmpty || 
-                     _controller.searchController.hasSearchQuery 
-                  ? _controller.searchController.filteredFiles 
+              files:
+                  _controller.searchController.filteredFiles.isNotEmpty ||
+                      _controller.searchController.hasSearchQuery
+                  ? _controller.searchController.filteredFiles
                   : _controller.vaultController.files,
               openedContent: _controller.fileOperationsController.openedContent,
               hoveredIndex: _controller.hoveredIndex,
@@ -240,9 +231,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
       await _controller.openVault(context: context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -252,9 +243,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
       await _controller.openVaultAt(dir, context: context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -264,9 +255,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
       await _controller.createVault(context: context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -276,9 +267,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
       await _controller.showRecentVaults(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -288,9 +279,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
       await _controller.openFile(file);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to decrypt: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to decrypt: $e')));
       }
     }
   }
@@ -300,9 +291,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
       await _controller.createNewFile(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     }
   }
@@ -312,9 +303,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
       await _controller.renameFile(context, file);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to rename: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to rename: $e')));
       }
     }
   }
@@ -324,9 +315,9 @@ class _VaultHomePageState extends State<VaultHomePage> {
       await _controller.deleteFile(context, file);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
       }
     }
   }

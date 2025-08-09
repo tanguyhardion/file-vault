@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'recent_vault_item.dart';
 
 
 class EmptyState extends StatelessWidget {
@@ -36,29 +37,11 @@ class EmptyState extends StatelessWidget {
                   const SizedBox(height: 12),
                   ...recentVaults.take(5).map((vaultPath) {
                     final vaultName = vaultPath.split(RegExp(r'[/\\]')).last;
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: const Icon(Icons.folder),
-                        title: Text(
-                          vaultName,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(
-                          vaultPath,
-                          style: TextStyle(
-                            color: Theme.of(context).textTheme.bodySmall?.color,
-                            fontSize: 12,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        onTap: () => onOpenRecent(vaultPath),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        hoverColor: Theme.of(context).colorScheme.primary.withOpacity(0.08),
-                      ),
+                    return RecentVaultItem(
+                      vaultPath: vaultPath,
+                      displayName: vaultName,
+                      onTap: () => onOpenRecent(vaultPath),
+                      showHoverEffect: true,
                     );
                   }).toList(),
                 ],

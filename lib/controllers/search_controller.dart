@@ -33,7 +33,7 @@ class SearchController extends ChangeNotifier {
 
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase().trim();
-    
+
     if (query.isEmpty) {
       _filteredFiles = [];
       _isSearching = false;
@@ -57,7 +57,10 @@ class SearchController extends ChangeNotifier {
     _searchByContent(query, nameMatches);
   }
 
-  Future<void> _searchByContent(String query, List<VaultFileEntry> nameMatches) async {
+  Future<void> _searchByContent(
+    String query,
+    List<VaultFileEntry> nameMatches,
+  ) async {
     final password = _vaultController.vaultPassword;
     if (password == null) {
       _isSearching = false;
@@ -66,10 +69,10 @@ class SearchController extends ChangeNotifier {
     }
 
     final contentMatches = <VaultFileEntry>[];
-    
+
     // Add files that match by name first
     contentMatches.addAll(nameMatches);
-    
+
     // Search through file contents
     for (final file in _vaultController.files) {
       // Skip if already matched by name
@@ -80,8 +83,9 @@ class SearchController extends ChangeNotifier {
       try {
         // Try to get from cache first
         final fp = await VaultService.getFingerprint(file.fullPath);
-        String content = ContentCache.instance.getIfFresh(file.fullPath, fp) ?? '';
-        
+        String content =
+            ContentCache.instance.getIfFresh(file.fullPath, fp) ?? '';
+
         // If not in cache, decrypt the file
         if (content.isEmpty) {
           final bytes = await VaultService.readVaultFileBytes(file.fullPath);
@@ -94,7 +98,7 @@ class SearchController extends ChangeNotifier {
             ContentCache.instance.put(file.fullPath, content, fp);
           }
         }
-        
+
         // Check if content contains the search query
         if (content.toLowerCase().contains(query)) {
           contentMatches.add(file);
