@@ -7,6 +7,12 @@ import '../services/vault_service.dart';
 import '../services/recent_vaults_service.dart';
 
 class VaultController extends ChangeNotifier {
+  // Allows creating only the marker file, without setting password or files
+  Future<void> createVaultMarkerOnly(String dir) async {
+    await _createVaultMarker(dir);
+    await RecentVaultsService.add(dir);
+    notifyListeners();
+  }
   String? _vaultDir;
   String? _vaultPassword;
   List<VaultFileEntry> _files = [];
@@ -25,11 +31,15 @@ class VaultController extends ChangeNotifier {
 
   static const String vaultMarkerFile = '.vault_marker';
 
-  Future<bool> _checkVaultMarker(String dir) async {
+  Future<bool> checkVaultMarker(String dir) async {
     final marker = File('$dir/$vaultMarkerFile');
     if (!await marker.exists()) return false;
     final contents = await marker.readAsString();
     return contents.contains('password_set: true');
+  }
+
+  Future<bool> _checkVaultMarker(String dir) async {
+    return checkVaultMarker(dir);
   }
 
   Future<void> _createVaultMarker(String dir) async {

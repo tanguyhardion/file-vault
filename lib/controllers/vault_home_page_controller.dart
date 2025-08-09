@@ -3,6 +3,7 @@ import 'package:file_selector/file_selector.dart';
 
 import '../models/vault_models.dart';
 import '../services/recent_vaults_service.dart';
+import '../services/vault_service.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/recent_vault_item.dart';
 import 'vault_controller.dart';
@@ -62,11 +63,56 @@ class VaultHomePageController extends ChangeNotifier {
   }
 
   Future<void> openVaultAt(String dir, {BuildContext? context}) async {
-    String? pw;
-    if (context != null && context.mounted) {
-      pw = await promptForPassword(context, title: 'Vault password');
-    } else {
+    if (context == null) {
       throw ArgumentError('Context is required for password prompt');
+    }
+
+    // Check marker file first before prompting for password
+    final hasMarker = await vaultController.checkVaultMarker(dir);
+    if (!hasMarker && context.mounted) {
+      // Check if there are existing .fva files in the directory
+      final existingFiles = await VaultService.listVaultFiles(dir);
+      final hasExistingFiles = existingFiles.isNotEmpty;
+      
+      String dialogTitle;
+      String dialogContent;
+      
+      if (hasExistingFiles) {
+        dialogTitle = 'Vault marker missing';
+        dialogContent = 'This folder contains ${existingFiles.length} encrypted file(s) but is missing a vault marker. This might be an existing vault that lost its marker file. Would you like to restore the marker?';
+      } else {
+        dialogTitle = 'Folder not recognized as a vault';
+        dialogContent = 'The selected folder does not contain a vault marker file. Would you like to mark it as a vault? This will allow you to use it as a vault.';
+      }
+      
+      final shouldMark = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(dialogTitle),
+          content: Text(dialogContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(hasExistingFiles ? 'Restore Marker' : 'Mark as Vault'),
+            ),
+          ],
+        ),
+      );
+      if (shouldMark == true) {
+        await vaultController.createVaultMarkerOnly(dir);
+      } else {
+        return; // User cancelled, don't proceed
+      }
+    }
+
+    // Now prompt for password
+    String? pw;
+    if (context.mounted) {
+      pw = await promptForPassword(context, title: 'Vault password');
     }
     if (pw == null || pw.isEmpty) return;
 
@@ -79,9 +125,7 @@ class VaultHomePageController extends ChangeNotifier {
     } catch (e) {
       throw Exception('Failed to open vault: $e');
     }
-  }
-
-  Future<void> createVault({BuildContext? context}) async {
+  }  Future<void> createVault({BuildContext? context}) async {
     final dir = await getDirectoryPath();
     if (dir == null) return;
 
