@@ -1,7 +1,7 @@
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path/path.dart' as p;
+// path is used in widgets, not directly here
 
 import '../models/vault_models.dart';
 import '../services/crypto_service.dart';
@@ -11,6 +11,10 @@ import '../services/vault_service.dart';
 import '../widgets/dialogs.dart';
 import '../shortcuts/save_intent.dart';
 import '../services/recent_vaults_service.dart';
+import '../widgets/vault_header.dart';
+import '../widgets/file_list.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/content_editor.dart';
 
 class VaultHomePage extends StatefulWidget {
   const VaultHomePage({super.key});
@@ -28,7 +32,6 @@ class _VaultHomePageState extends State<VaultHomePage> {
   final TextEditingController _editorController = TextEditingController();
   bool _dirty = false;
   int? _hoveredIndex;
-  int? _menuOpenIndex;
   List<String> _recentVaults = [];
 
   @override
@@ -65,15 +68,26 @@ class _VaultHomePageState extends State<VaultHomePage> {
             appBar: AppBar(
               title: const Text('File Vault'),
               actions: [
-                IconButton(
-                  tooltip: 'Open vault folder',
-                  icon: const Icon(Icons.folder_open),
-                  onPressed: _onOpenVault,
-                ),
+                // Create new vault first
                 IconButton(
                   tooltip: 'Create new vault',
                   icon: const Icon(Icons.create_new_folder_outlined),
                   onPressed: _onCreateVault,
+                ),
+                Container(
+                  width: 1,
+                  height: kToolbarHeight - 32,
+                  color: Divider.createBorderSide(context).color,
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 6,
+                  ),
+                ),
+                // Group: Open vault, Open recent, Close vault
+                IconButton(
+                  tooltip: 'Open vault',
+                  icon: const Icon(Icons.folder_open),
+                  onPressed: _onOpenVault,
                 ),
                 IconButton(
                   tooltip: 'Open recent vaults',
@@ -96,23 +110,46 @@ class _VaultHomePageState extends State<VaultHomePage> {
                   width: 260,
                   child: Column(
                     children: [
-                      _buildVaultHeader(context),
-                      Expanded(child: _buildFileList()),
+                      VaultHeader(vaultDir: _vaultDir),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
                           8,
                           8,
                           8,
-                          24,
-                        ), // more margin at bottom
-                        child: FilledButton.icon(
-                          onPressed:
-                              (_vaultDir != null && _vaultPassword != null)
-                              ? _onCreateNewFile
-                              : null,
-                          icon: const Icon(Icons.note_add),
-                          label: const Text('New secret file'),
+                          8,
+                        ), // margin at top
+                        child: SizedBox(
+                          height: 48, // slightly taller
+                          child: FilledButton.icon(
+                            onPressed:
+                                (_vaultDir != null && _vaultPassword != null)
+                                ? _onCreateNewFile
+                                : null,
+                            icon: const Icon(Icons.note_add),
+                            label: const Text('New secret file'),
+                          ),
                         ),
+                      ),
+                      Expanded(
+                        child: _vaultDir == null
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text(
+                                    'Open a vault folder to see .fva files',
+                                  ),
+                                ),
+                              )
+                            : FileList(
+                                files: _files,
+                                openedContent: _openedContent,
+                                hoveredIndex: _hoveredIndex,
+                                onHoverChanged: (i) =>
+                                    setState(() => _hoveredIndex = i),
+                                onOpenFile: _onOpenFile,
+                                onRename: _onRenameFile,
+                                onDelete: _onDeleteFile,
+                              ),
                       ),
                     ],
                   ),
@@ -123,202 +160,27 @@ class _VaultHomePageState extends State<VaultHomePage> {
                   child: _loading
                       ? const Center(child: CircularProgressIndicator())
                       : _openedContent == null
-                      ? _buildEmptyState()
-                      : _buildContentView(),
+                      ? EmptyState(
+                          recentVaults: _recentVaults,
+                          onOpenRecent: _onOpenRecent,
+                        )
+                      : ContentEditor(
+                          content: _openedContent!,
+                          controller: _editorController,
+                          dirty: _dirty,
+                          loading: _loading,
+                          onSave: _onSaveCurrentFile,
+                          onChanged: (v) {
+                            if (!_dirty) {
+                              setState(() => _dirty = true);
+                            }
+                          },
+                        ),
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildVaultHeader(BuildContext context) {
-    final dir = _vaultDir;
-    final name = dir == null ? 'No vault opened' : p.basename(dir);
-    return ListTile(
-      title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: dir == null ? const Text('Open or create a vault') : Text(dir),
-    );
-  }
-
-  Widget _buildFileList() {
-    if (_vaultDir == null) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text('Open a vault folder to see .fva files'),
-        ),
-      );
-    }
-    if (_files.isEmpty) {
-      return const Center(child: Text('No .fva files in this vault'));
-    }
-    return ListView.separated(
-      itemCount: _files.length,
-      separatorBuilder: (_, _) => const SizedBox.shrink(),
-      itemBuilder: (context, index) {
-        final f = _files[index];
-        final isOpen = _openedContent?.source.fullPath == f.fullPath;
-        final isHovered = _hoveredIndex == index || _menuOpenIndex == index;
-        return MouseRegion(
-          onEnter: (_) => setState(() => _hoveredIndex = index),
-          onExit: (_) {
-            // Don't hide while a menu for this item is open
-            if (_menuOpenIndex != index) {
-              setState(() => _hoveredIndex = null);
-            }
-          },
-          child: ListTile(
-            selected: isOpen,
-            title: Text(f.fileName),
-            onTap: () => _onOpenFile(f),
-            leading: const Icon(Icons.insert_drive_file_outlined),
-            trailing: isHovered
-                ? _FileItemMenu(
-                    onOpen: () => setState(() => _menuOpenIndex = index),
-                    onClose: () => setState(() {
-                      _menuOpenIndex = null;
-                      _hoveredIndex = null;
-                    }),
-                    onRename: () => _onRenameFile(f),
-                    onDelete: () => _onDeleteFile(f),
-                  )
-                : null,
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.lock_outline, size: 56),
-          const SizedBox(height: 12),
-          const Text('Open a vault and select a file to view its content'),
-          if (_recentVaults.isNotEmpty) ...[
-            const SizedBox(height: 32),
-            Container(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Recent Vaults',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12.0),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _recentVaults.length,
-                        itemBuilder: (context, index) {
-                          final path = _recentVaults[index];
-                          final displayName = RecentVaultsService.displayName(
-                            path,
-                          );
-                          final isFirst = index == 0;
-                          final isLast = index == _recentVaults.length - 1;
-
-                          return Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => _onOpenRecent(path),
-                              borderRadius: BorderRadius.vertical(
-                                top: isFirst
-                                    ? const Radius.circular(12.0)
-                                    : Radius.zero,
-                                bottom: isLast
-                                    ? const Radius.circular(12.0)
-                                    : Radius.zero,
-                              ),
-                              child: ListTile(
-                                leading: const Icon(Icons.folder),
-                                title: Text(displayName),
-                                subtitle: Text(
-                                  path,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContentView() {
-    final content = _openedContent!;
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Row(
-            children: [
-              Text(
-                content.source.fileName,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              if (_dirty) ...[
-                const SizedBox(width: 8),
-                Tooltip(
-                  message: 'Unsaved changes',
-                  child: Icon(Icons.circle, size: 10, color: Colors.orange),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Tooltip(
-                message: 'Save (Ctrl+S)',
-                child: FilledButton.icon(
-                  onPressed: (_vaultPassword != null && !_loading && _dirty)
-                      ? _onSaveCurrentFile
-                      : null,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Save'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: TextField(
-              controller: _editorController,
-              expands: true,
-              maxLines: null,
-              minLines: null,
-              textAlignVertical: TextAlignVertical.top,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-              style: const TextStyle(fontFamily: 'monospace'),
-              onChanged: (_) {
-                if (!_dirty) {
-                  setState(() => _dirty = true);
-                }
-              },
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -696,82 +558,3 @@ class _VaultHomePageState extends State<VaultHomePage> {
     }
   }
 }
-
-class _FileItemMenu extends StatelessWidget {
-  final VoidCallback onOpen;
-  final VoidCallback onClose;
-  final VoidCallback onRename;
-  final VoidCallback onDelete;
-
-  const _FileItemMenu({
-    required this.onOpen,
-    required this.onClose,
-    required this.onRename,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Builder(
-      builder: (btnCtx) => IconButton(
-        tooltip: 'More',
-        icon: const Icon(Icons.more_vert),
-        onPressed: () async {
-          onOpen();
-          final RenderBox button = btnCtx.findRenderObject() as RenderBox;
-          final RenderBox overlay =
-              Overlay.of(btnCtx).context.findRenderObject() as RenderBox;
-          final RelativeRect position = RelativeRect.fromRect(
-            Rect.fromPoints(
-              button.localToGlobal(Offset.zero, ancestor: overlay),
-              button.localToGlobal(
-                button.size.bottomRight(Offset.zero),
-                ancestor: overlay,
-              ),
-            ),
-            Offset.zero & overlay.size,
-          );
-
-          final selected = await showMenu<_MenuAction>(
-            context: btnCtx,
-            position: position,
-            items: [
-              const PopupMenuItem(
-                value: _MenuAction.rename,
-                child: Row(
-                  children: [
-                    Icon(Icons.drive_file_rename_outline),
-                    SizedBox(width: 8),
-                    Text('Rename'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: _MenuAction.delete,
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline),
-                    SizedBox(width: 8),
-                    Text('Delete'),
-                  ],
-                ),
-              ),
-            ],
-          );
-
-          try {
-            if (selected == _MenuAction.rename) {
-              onRename();
-            } else if (selected == _MenuAction.delete) {
-              onDelete();
-            }
-          } finally {
-            onClose();
-          }
-        },
-      ),
-    );
-  }
-}
-
-enum _MenuAction { rename, delete }
