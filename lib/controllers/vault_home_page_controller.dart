@@ -100,8 +100,13 @@ class VaultHomePageController extends ChangeNotifier {
         shouldMark = result == true;
       }
       if (shouldMark && context.mounted) {
-        // For restoration, marker is created with empty password
-        await vaultController.createVaultMarkerOnly(dir, password: '');
+        // Prompt for password before restoring marker
+        String? restorePassword = await promptForPasswordCreation(context, title: 'Set a password for the restored vault');
+        if (restorePassword == null || restorePassword.isEmpty) {
+          // User cancelled or entered empty password
+          return;
+        }
+        await vaultController.createVaultMarkerOnly(dir, password: restorePassword);
       } else {
         return; // User cancelled, don't proceed
       }
