@@ -93,8 +93,8 @@ class VaultController extends ChangeNotifier {
       final saltLine = contents.split('\n').firstWhere((l) => l.startsWith('salt: '), orElse: () => '');
       final hashLine = contents.split('\n').firstWhere((l) => l.startsWith('password_hash: '), orElse: () => '');
       if (saltLine.isEmpty || hashLine.isEmpty) return null;
-      final salt = base64Decode(saltLine.substring(6));
-      final storedHash = base64Decode(hashLine.substring(14));
+      final salt = base64Decode(saltLine.substring(6).trim());
+      final storedHash = base64Decode(hashLine.substring(15).trim());
       final inputHash = await CryptoService.hashPassword(password: password, salt: salt);
       if (!ListEquality().equals(storedHash, inputHash)) {
         return null;

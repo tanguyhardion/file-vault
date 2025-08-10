@@ -368,4 +368,23 @@ class VaultHomePageController extends ChangeNotifier {
       saveCurrentFile();
     }
   }
+
+  Future<void> openFolderInExplorer(String path) async {
+    // Open the folder using platform-specific command.
+    if (Platform.isWindows) {
+      // Use explorer to open the folder.
+      await Process.run('explorer', [path]);
+      return;
+    }
+    if (Platform.isMacOS) {
+      await Process.run('open', [path]);
+      return;
+    }
+    if (Platform.isLinux) {
+      // Try xdg-open commonly available on Linux desktops.
+      await Process.run('xdg-open', [path]);
+      return;
+    }
+    throw UnsupportedError('Opening folder is not supported on this platform');
+  }
 }

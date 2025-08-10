@@ -105,7 +105,10 @@ class _VaultHomePageState extends State<VaultHomePage> {
             children: [
               Column(
                 children: [
-                  VaultHeader(vaultDir: _controller.vaultController.vaultDir),
+                  VaultHeader(
+                    vaultDir: _controller.vaultController.vaultDir,
+                    onOpenInExplorer: _onOpenVaultInExplorer,
+                  ),
                   _buildSearchBar(),
                   Expanded(child: _buildFileList()),
                 ],
@@ -259,6 +262,20 @@ class _VaultHomePageState extends State<VaultHomePage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  Future<void> _onOpenVaultInExplorer() async {
+    final dir = _controller.vaultController.vaultDir;
+    if (dir == null) return;
+    try {
+      await _controller.openFolderInExplorer(dir);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to open folder: $e')));
       }
     }
   }
