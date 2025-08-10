@@ -1,60 +1,55 @@
 # File Vault
 
-A secure and modern Flutter application for managing and encrypting files on Windows.
+File Vault does not store your data. Everything is kept locally on your device and is safely encrypted.
+
+A simple Flutter app for securely managing and encrypting files on Windows. All files stay on your computer and are never uploaded anywhere.
 
 ## Features
-- Secure file storage and encryption
-- User-friendly interface
-- Cross-platform ready (Windows, with potential for other platforms)
+
+- Local file storage and strong encryption
+- Simple, user-friendly interface
 - Fast search and organization
+- Windows support (other platforms planned)
 
 ## Getting Started
 
-### Prerequisites
-- [Flutter](https://flutter.dev/docs/get-started/install) (latest stable)
-- Windows 10/11
-
-### Installation
-1. Clone the repository:
+1. Install [Flutter](https://flutter.dev/docs/get-started/install) (latest stable)
+2. Clone this repo and enter the folder:
    ```sh
    git clone https://github.com/tanguyhardion/file-vault.git
    cd file-vault
    ```
-2. Fetch dependencies:
+3. Get dependencies:
    ```sh
    flutter pub get
    ```
-3. Build the Windows app:
-   ```sh
-   flutter build windows
-   ```
-4. Run the app:
+4. Build and run for Windows:
    ```sh
    flutter run -d windows
    ```
 
 ## Project Structure
+
 ```
-lib/
-  main.dart                # App entry point
-  models/                  # Data models
-  services/                # Business logic & encryption
-  widgets/                 # UI components
-windows/                   # Windows-specific build files
-build/                     # Generated build assets
+lib/           # App code
+windows/       # Windows build files
+build/         # Generated assets
 ```
 
 ## Development
-- To clean the build: `flutter clean`
-- To update dependencies: `flutter pub get`
-- To run tests: `flutter test`
+
+- Clean build: `flutter clean`
+- Update dependencies: `flutter pub get`
+- Run tests: `flutter test`
 
 ## Contributing
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+
+Pull requests are welcome! For major changes, please open an issue first.
 
 ## License
-This project is licensed under the MIT License.
+
+MIT License
 
 ---
 
-For more information, see the [Flutter documentation](https://docs.flutter.dev/).
+For more info, see the [Flutter documentation](https://docs.flutter.dev/).
