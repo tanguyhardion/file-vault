@@ -4,6 +4,7 @@
 #include <flutter_windows.h>
 
 #include "resource.h"
+#include "window_state_manager.h"
 
 namespace {
 
@@ -113,6 +114,7 @@ void WindowClassRegistrar::UnregisterWindowClass() {
 
 Win32Window::Win32Window() {
   ++g_active_window_count;
+  state_manager_ = std::make_unique<WindowStateManager>();
 }
 
 Win32Window::~Win32Window() {
@@ -149,7 +151,52 @@ bool Win32Window::Create(const std::wstring& title,
   return OnCreate();
 }
 
+bool Win32Window::CreateWithSavedState(const std::wstring& title) {
+  Destroy();
+
+  // Load and cache the window state
+  cached_state_ = state_manager_->LoadWindowState();
+  state_loaded_ = true;
+  
+  const wchar_t* window_class =
+      WindowClassRegistrar::GetInstance()->GetWindowClass();
+
+  DWORD style = WS_OVERLAPPEDWINDOW;
+  
+  // Use saved position and size, or defaults for first launch
+  int x = cached_state_.x;
+  int y = cached_state_.y;
+  int width = cached_state_.width;
+  int height = cached_state_.height;
+
+  // Apply DPI scaling
+  POINT target_point = {x, y};
+  HMONITOR monitor = MonitorFromPoint(target_point, MONITOR_DEFAULTTONEAREST);
+  UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
+  double scale_factor = dpi / 96.0;
+
+  HWND window = CreateWindow(
+      window_class, title.c_str(), style,
+      Scale(x, scale_factor), Scale(y, scale_factor),
+      Scale(width, scale_factor), Scale(height, scale_factor),
+      nullptr, nullptr, GetModuleHandle(nullptr), this);
+
+  if (!window) {
+    return false;
+  }
+
+  UpdateTheme(window);
+
+  return OnCreate();
+}
+
 bool Win32Window::Show() {
+  // Check if we should show maximized based on cached state
+  if (state_manager_ && state_loaded_) {
+    if (cached_state_.is_maximized || cached_state_.is_first_launch) {
+      return ShowWindow(window_handle_, SW_SHOWMAXIMIZED);
+    }
+  }
   return ShowWindow(window_handle_, SW_SHOWNORMAL);
 }
 
@@ -180,6 +227,11 @@ Win32Window::MessageHandler(HWND hwnd,
                             LPARAM const lparam) noexcept {
   switch (message) {
     case WM_DESTROY:
+      // Save window state before destroying
+      if (state_manager_) {
+        WindowState current_state = state_manager_->GetCurrentWindowState(hwnd);
+        state_manager_->SaveWindowState(current_state);
+      }
       window_handle_ = nullptr;
       Destroy();
       if (quit_on_close_) {
@@ -204,8 +256,22 @@ Win32Window::MessageHandler(HWND hwnd,
         MoveWindow(child_content_, rect.left, rect.top, rect.right - rect.left,
                    rect.bottom - rect.top, TRUE);
       }
+      
+      // Save window state on size change (including maximize/restore)
+      if (state_manager_ && wparam != SIZE_MINIMIZED) {
+        WindowState current_state = state_manager_->GetCurrentWindowState(hwnd);
+        state_manager_->SaveWindowState(current_state);
+      }
       return 0;
     }
+
+    case WM_MOVE:
+      // Save window state on move
+      if (state_manager_) {
+        WindowState current_state = state_manager_->GetCurrentWindowState(hwnd);
+        state_manager_->SaveWindowState(current_state);
+      }
+      break;
 
     case WM_ACTIVATE:
       if (child_content_ != nullptr) {

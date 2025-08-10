@@ -195,28 +195,26 @@ class _VaultHomePageState extends State<VaultHomePage> {
   }
 
   Widget _buildFileList() {
-    return Expanded(
-      child: _controller.vaultController.vaultDir == null
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text('Open a vault folder to see your secret files'),
-              ),
-            )
-          : FileList(
-              files:
-                  _controller.searchController.filteredFiles.isNotEmpty ||
-                      _controller.searchController.hasSearchQuery
-                  ? _controller.searchController.filteredFiles
-                  : _controller.vaultController.files,
-              openedContent: _controller.fileOperationsController.openedContent,
-              hoveredIndex: _controller.hoveredIndex,
-              onHoverChanged: _controller.setHoveredIndex,
-              onOpenFile: (file) => _onOpenFile(file),
-              onRename: (file) => _onRenameFile(file),
-              onDelete: (file) => _onDeleteFile(file),
+    return _controller.vaultController.vaultDir == null
+        ? const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('Open a vault folder to see your secret files'),
             ),
-    );
+          )
+        : FileList(
+            files:
+                _controller.searchController.filteredFiles.isNotEmpty ||
+                    _controller.searchController.hasSearchQuery
+                ? _controller.searchController.filteredFiles
+                : _controller.vaultController.files,
+            openedContent: _controller.fileOperationsController.openedContent,
+            hoveredIndex: _controller.hoveredIndex,
+            onHoverChanged: _controller.setHoveredIndex,
+            onOpenFile: (file) => _onOpenFile(file),
+            onRename: (file) => _onRenameFile(file),
+            onDelete: (file) => _onDeleteFile(file),
+          );
   }
 
   Widget _buildMainContent() {

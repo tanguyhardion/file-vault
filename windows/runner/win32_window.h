@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+#include "window_state_manager.h"
+
 // A class abstraction for a high DPI-aware Win32 Window. Intended to be
 // inherited from by classes that wish to specialize with custom
 // rendering and input handling
@@ -35,6 +37,10 @@ class Win32Window {
   // as appropriate for the default monitor. The window is invisible until
   // |Show| is called. Returns true if the window was created successfully.
   bool Create(const std::wstring& title, const Point& origin, const Size& size);
+
+  // Creates a win32 window with |title| using saved window state or defaults.
+  // If no saved state exists, the window will start maximized.
+  bool CreateWithSavedState(const std::wstring& title);
 
   // Show the current window. Returns true if the window was successfully shown.
   bool Show();
@@ -97,6 +103,13 @@ class Win32Window {
 
   // window handle for hosted content.
   HWND child_content_ = nullptr;
+
+  // Window state manager for persistence
+  std::unique_ptr<WindowStateManager> state_manager_;
+  
+  // Cache the window state to avoid multiple registry reads
+  mutable WindowState cached_state_;
+  mutable bool state_loaded_ = false;
 };
 
 #endif  // RUNNER_WIN32_WINDOW_H_

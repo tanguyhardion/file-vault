@@ -132,6 +132,27 @@ class CryptoService {
     }
   }
 
+  // Generate a random salt for password hashing
+  static Uint8List randomSalt([int length = _saltLength]) {
+    final rnd = Random.secure();
+    final bytes = Uint8List(length);
+    for (int i = 0; i < length; i++) {
+      bytes[i] = rnd.nextInt(256);
+    }
+    return bytes;
+  }
+
+  // Hash a password with PBKDF2-HMAC-SHA256
+  static Future<Uint8List> hashPassword({required String password, required Uint8List salt}) async {
+    final pwBytes = utf8.encode(password);
+    final keyBytes = await _pbkdf2.deriveKey(
+      secretKey: SecretKey(pwBytes),
+      nonce: salt,
+    );
+    final raw = await keyBytes.extractBytes();
+    return Uint8List.fromList(raw);
+  }
+
   static Future<SecretKey> _deriveKey({
     required String password,
     required List<int> salt,
