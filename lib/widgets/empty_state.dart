@@ -6,11 +6,13 @@ import 'recent_vault_item.dart';
 class EmptyState extends StatelessWidget {
   final List<String> recentVaults;
   final void Function(String path) onOpenRecent;
+  final VoidCallback? onShowAllRecent;
 
   const EmptyState({
     super.key,
     required this.recentVaults,
     required this.onOpenRecent,
+    this.onShowAllRecent,
   });
 
   @override
@@ -36,7 +38,7 @@ class EmptyState extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ...recentVaults.take(5).map((vaultPath) {
+                  ...recentVaults.take(3).map((vaultPath) {
                     final vaultName = p.basename(vaultPath);
                     return RecentVaultItem(
                       vaultPath: vaultPath,
@@ -45,6 +47,21 @@ class EmptyState extends StatelessWidget {
                       showHoverEffect: true,
                     );
                   }),
+                  if (recentVaults.length > 3 && onShowAllRecent != null) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.center,
+                      child: TextButton.icon(
+                        onPressed: onShowAllRecent,
+                        icon: const Icon(Icons.more_horiz, size: 16),
+                        label: const Text('More'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          textStyle: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

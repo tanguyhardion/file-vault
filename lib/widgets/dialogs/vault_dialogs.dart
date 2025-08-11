@@ -44,8 +44,8 @@ Future<String?> showRecentVaultsDialog(
       ),
       content: SizedBox(
         width: 400,
+        height: 300, // Set a fixed height to enable scrolling
         child: ListView.builder(
-          shrinkWrap: true,
           itemCount: recentVaults.length,
           itemBuilder: (context, index) {
             final path = recentVaults[index];

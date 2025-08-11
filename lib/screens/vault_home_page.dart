@@ -229,6 +229,7 @@ class _VaultHomePageState extends State<VaultHomePage> {
       return EmptyState(
         recentVaults: _controller.recentVaults,
         onOpenRecent: (dir) => _onOpenRecent(dir),
+        onShowAllRecent: () => _onShowRecentVaults(),
       );
     }
 
