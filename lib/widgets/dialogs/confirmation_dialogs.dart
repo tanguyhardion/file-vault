@@ -29,30 +29,6 @@ Future<bool> confirmDeletion(
   return confirm;
 }
 
-Future<bool?> showVaultMarkerDialog(
-  BuildContext context, {
-  required String title,
-  required String content,
-  required String confirmText,
-}) async {
-  return await showDialog<bool>(
-    context: context,
-    builder: (ctx) => DialogWrapper(
-      title: Text(title),
-      content: Text(content),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          child: Text(confirmText),
-        ),
-      ],
-    ),
-  );
-}
 
 Future<void> showErrorDialog(
   BuildContext context, {
