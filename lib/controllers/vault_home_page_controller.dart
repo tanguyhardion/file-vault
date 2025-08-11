@@ -3,6 +3,9 @@ import 'package:file_selector/file_selector.dart';
 
 import '../models/vault_models.dart';
 import '../services/recent_vaults_service.dart';
+import '../widgets/dialogs/dialog_wrapper.dart';
+import '../widgets/dialogs/confirmation_dialogs.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/vault_service.dart';
 import '../widgets/widgets.dart';
 import 'vault_controller.dart';
@@ -53,7 +56,19 @@ class VaultHomePageController extends ChangeNotifier {
 
   Future<void> _loadRecent() async {
     final list = await RecentVaultsService.getRecent();
-    _recentVaults = list;
+    // Filter out folders that no longer exist
+    final validList = <String>[];
+    for (final path in list) {
+      if (Directory(path).existsSync()) {
+        validList.add(path);
+      }
+    }
+    // If any were removed, update persistent storage
+    if (validList.length != list.length) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(RecentVaultsService.prefsKey, validList);
+    }
+    _recentVaults = validList;
     notifyListeners();
   }
 
@@ -64,6 +79,24 @@ class VaultHomePageController extends ChangeNotifier {
   }
 
   Future<void> openVaultAt(String dir, {BuildContext? context}) async {
+    // Check if folder exists before proceeding
+    if (!Directory(dir).existsSync()) {
+      if (context != null && context.mounted) {
+        await showErrorDialog(
+          context,
+          title: 'Vault Not Found',
+          message:
+              "The selected vault folder could not be found. The path might have changed or the folder may have been deleted.",
+        );
+      }
+      // Remove from recent vaults and persistent storage
+      final prefs = await SharedPreferences.getInstance();
+      final current = await RecentVaultsService.getRecent();
+      final updated = current.where((e) => e != dir).toList();
+      await prefs.setStringList(RecentVaultsService.prefsKey, updated);
+      await _loadRecent();
+      return;
+    }
     if (context == null) {
       throw ArgumentError('Context is required for password prompt');
     }

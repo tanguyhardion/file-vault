@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class RecentVaultsService {
   RecentVaultsService._();
   static const _prefsKey = 'recentVaultDirs';
+  static String get prefsKey => _prefsKey;
   static const _maxItems = 50;
 
   static Future<List<String>> getRecent() async {
