@@ -5,3 +5,4 @@ export 'password_dialogs.dart';
 export 'input_dialogs.dart';
 export 'confirmation_dialogs.dart';
 export 'vault_dialogs.dart';
+export 'progress_dialogs.dart';

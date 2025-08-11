@@ -54,24 +54,6 @@ Future<bool?> showVaultMarkerDialog(
   );
 }
 
-void showLoadingDialog(BuildContext context, {String message = 'Loading...'}) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (ctx) => DialogWrapper(
-      showActions: false,
-      content: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(width: 20),
-          Text(message),
-        ],
-      ),
-    ),
-  );
-}
-
 Future<void> showErrorDialog(
   BuildContext context, {
   String title = 'Error',

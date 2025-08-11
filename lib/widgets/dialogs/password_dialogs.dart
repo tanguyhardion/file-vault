@@ -14,6 +14,8 @@ Future<String?> promptForPasswordCreation(
   await showDialog<void>(
     context: context,
     builder: (ctx) {
+      bool passwordVisible = false;
+      bool confirmVisible = false;
       return StatefulBuilder(
         builder: (context, setState) {
           void validateAndSubmit() {
@@ -28,7 +30,6 @@ Future<String?> promptForPasswordCreation(
             result = passwordController.text;
             Navigator.of(ctx).pop();
           }
-
           return DialogWrapper(
             title: Text(title),
             onEnterPressed: validateAndSubmit,
@@ -39,16 +40,26 @@ Future<String?> promptForPasswordCreation(
               children: [
                 TextField(
                   controller: passwordController,
-                  obscureText: true,
+                  obscureText: !passwordVisible,
                   autofocus: true,
-                  decoration: const InputDecoration(labelText: 'Password'),
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(passwordVisible ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () => setState(() => passwordVisible = !passwordVisible),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: confirmController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
+                  obscureText: !confirmVisible,
+                  decoration: InputDecoration(
                     labelText: 'Confirm Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(confirmVisible ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () => setState(() => confirmVisible = !confirmVisible),
+                    ),
                   ),
                   onSubmitted: (_) => validateAndSubmit(),
                 ),
@@ -82,21 +93,32 @@ Future<String?> promptForPassword(
     Navigator.of(context).pop();
   }
 
+  bool passwordVisible = false;
   await showDialog<void>(
     context: context,
     builder: (ctx) {
-      return DialogWrapper(
-        title: Text(title),
-        onEnterPressed: submit,
-        onCancel: () => Navigator.of(ctx).pop(),
-        onConfirm: submit,
-        content: TextField(
-          controller: controller,
-          obscureText: true,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Password'),
-          onSubmitted: (_) => submit(),
-        ),
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return DialogWrapper(
+            title: Text(title),
+            onEnterPressed: submit,
+            onCancel: () => Navigator.of(ctx).pop(),
+            onConfirm: submit,
+            content: TextField(
+              controller: controller,
+              obscureText: !passwordVisible,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                suffixIcon: IconButton(
+                  icon: Icon(passwordVisible ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => passwordVisible = !passwordVisible),
+                ),
+              ),
+              onSubmitted: (_) => submit(),
+            ),
+          );
+        },
       );
     },
   );
@@ -116,21 +138,32 @@ Future<String?> promptForPasswordWithVerification(
     Navigator.of(context).pop();
   }
 
+  bool passwordVisible = false;
   await showDialog<void>(
     context: context,
     builder: (ctx) {
-      return DialogWrapper(
-        title: Text(title),
-        onEnterPressed: submit,
-        onCancel: () => Navigator.of(ctx).pop(),
-        onConfirm: submit,
-        content: TextField(
-          controller: controller,
-          obscureText: true,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Password'),
-          onSubmitted: (_) => submit(),
-        ),
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return DialogWrapper(
+            title: Text(title),
+            onEnterPressed: submit,
+            onCancel: () => Navigator.of(ctx).pop(),
+            onConfirm: submit,
+            content: TextField(
+              controller: controller,
+              obscureText: !passwordVisible,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                suffixIcon: IconButton(
+                  icon: Icon(passwordVisible ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => passwordVisible = !passwordVisible),
+                ),
+              ),
+              onSubmitted: (_) => submit(),
+            ),
+          );
+        },
       );
     },
   );

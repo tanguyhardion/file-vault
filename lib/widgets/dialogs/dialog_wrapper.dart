@@ -57,43 +57,45 @@ class DialogWrapper extends StatelessWidget {
           maxWidth: 500,
           maxHeight: 600,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (title != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                child: DefaultTextStyle(
-                  style: Theme.of(context).textTheme.headlineSmall!,
-                  child: title!,
+        child: IntrinsicWidth(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (title != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  child: DefaultTextStyle(
+                    style: Theme.of(context).textTheme.headlineSmall!,
+                    child: title!,
+                  ),
+                ),
+              Flexible(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    title != null ? 20 : 24,
+                    24,
+                    dialogActions.isEmpty ? 24 : 0,
+                  ),
+                  child: content,
                 ),
               ),
-            Flexible(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  title != null ? 20 : 24,
-                  24,
-                  dialogActions.isEmpty ? 24 : 0,
-                ),
-                child: content,
-              ),
-            ),
-            if (dialogActions.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    for (int i = 0; i < dialogActions.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 8),
-                      dialogActions[i],
+              if (dialogActions.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      for (int i = 0; i < dialogActions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 8),
+                        dialogActions[i],
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

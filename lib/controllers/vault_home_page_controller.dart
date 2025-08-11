@@ -5,6 +5,7 @@ import '../models/vault_models.dart';
 import '../services/recent_vaults_service.dart';
 import '../services/vault_service.dart';
 import '../widgets/dialogs.dart';
+import '../widgets/dialogs/progress_dialogs.dart';
 import '../widgets/recent_vault_item.dart';
 import 'vault_controller.dart';
 import 'file_operations_controller.dart';
@@ -101,12 +102,18 @@ class VaultHomePageController extends ChangeNotifier {
       }
       if (shouldMark && context.mounted) {
         // Prompt for password before restoring marker
-        String? restorePassword = await promptForPasswordCreation(context, title: 'Set a password for the restored vault');
+        String? restorePassword = await promptForPasswordCreation(
+          context,
+          title: 'Set a password for the restored vault',
+        );
         if (restorePassword == null || restorePassword.isEmpty) {
           // User cancelled or entered empty password
           return;
         }
-        await vaultController.createVaultMarkerOnly(dir, password: restorePassword);
+        await vaultController.createVaultMarkerOnly(
+          dir,
+          password: restorePassword,
+        );
       } else {
         return; // User cancelled, don't proceed
       }
@@ -241,12 +248,20 @@ class VaultHomePageController extends ChangeNotifier {
         context,
         title: 'Set a password for this vault',
       );
+      // Show 'Creating and opening vault...' dialog
+      if (context.mounted) {
+        showLoadingDialog(context, message: 'Creating and opening vault...');
+      }
     } else {
       throw ArgumentError('Context is required for password prompt');
     }
     if (pw == null || pw.isEmpty) return;
 
     await vaultController.createVault(vaultDirPath, pw);
+    // Dismiss the vault creation dialog
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
     fileOperationsController.closeFile();
     searchController.clearSearch();
     editorController.clear();
