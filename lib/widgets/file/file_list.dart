@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/vault_models.dart';
+import '../../models/vault_models.dart';
 import 'file_item_menu.dart';
 
 class FileList extends StatelessWidget {

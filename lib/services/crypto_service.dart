@@ -143,7 +143,10 @@ class CryptoService {
   }
 
   // Hash a password with PBKDF2-HMAC-SHA256
-  static Future<Uint8List> hashPassword({required String password, required Uint8List salt}) async {
+  static Future<Uint8List> hashPassword({
+    required String password,
+    required Uint8List salt,
+  }) async {
     final pwBytes = utf8.encode(password);
     final keyBytes = await _pbkdf2.deriveKey(
       secretKey: SecretKey(pwBytes),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'recent_vault_item.dart';
-
+import '../vault/recent_vault_item.dart';
 
 class EmptyState extends StatelessWidget {
   final List<String> recentVaults;
@@ -56,7 +55,9 @@ class EmptyState extends StatelessWidget {
                         icon: const Icon(Icons.more_horiz, size: 16),
                         label: const Text('More'),
                         style: TextButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
                           textStyle: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),

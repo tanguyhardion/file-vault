@@ -13,7 +13,9 @@ class VaultHeader extends StatelessWidget {
     final name = dir == null ? 'No vault opened' : p.basename(dir);
     return ListTile(
       title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: dir == null ? const Text('Open or create a vault') : Text(dir, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: dir == null
+          ? const Text('Open or create a vault')
+          : Text(dir, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: dir == null
           ? null
           : IconButton(

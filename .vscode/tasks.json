@@ -54,6 +54,14 @@
       "isBackground": false,
       "problemMatcher": [],
       "group": "build"
+    },
+    {
+      "label": "dart: format all",
+      "type": "shell",
+      "command": "dart format .",
+      "isBackground": false,
+      "problemMatcher": [],
+      "group": "build"
     }
   ]
 }

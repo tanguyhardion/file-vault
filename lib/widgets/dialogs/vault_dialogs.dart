@@ -31,7 +31,7 @@ Future<String?> showRecentVaultsDialog(
   required List<String> recentVaults,
   required String Function(String) displayNameMapper,
   required Widget Function(String path, String displayName, VoidCallback onTap)
-      itemBuilder,
+  itemBuilder,
 }) async {
   return await showDialog<String>(
     context: context,

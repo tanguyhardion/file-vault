@@ -9,7 +9,7 @@ void showLoadingDialog(BuildContext context, {String message = 'Loading...'}) {
     builder: (ctx) => DialogWrapper(
       showActions: false,
       content: Padding(
-  padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

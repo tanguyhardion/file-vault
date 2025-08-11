@@ -3,10 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../controllers/vault_home_page_controller.dart';
 import '../shortcuts/save_intent.dart';
-import '../widgets/vault_header.dart';
-import '../widgets/file_list.dart';
-import '../widgets/empty_state.dart';
-import '../widgets/content_editor.dart';
+import '../widgets/widgets.dart';
 
 class VaultHomePage extends StatefulWidget {
   const VaultHomePage({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/vault_models.dart';
+import '../../models/vault_models.dart';
 
 class ContentEditor extends StatelessWidget {
   final DecryptedFileContent content;
@@ -16,8 +16,8 @@ class ContentEditor extends StatelessWidget {
     required this.controller,
     required this.dirty,
     required this.loading,
-  required this.onSave,
-  this.onChanged,
+    required this.onSave,
+    this.onChanged,
   });
 
   @override

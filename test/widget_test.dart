@@ -10,7 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:file_vault/app.dart';
 
 void main() {
-  testWidgets('FileVaultApp renders without crashing', (WidgetTester tester) async {
+  testWidgets('FileVaultApp renders without crashing', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const FileVaultApp());
     // Basic smoke check: app title present
     expect(find.text('File Vault'), findsWidgets);

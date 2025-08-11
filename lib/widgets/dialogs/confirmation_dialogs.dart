@@ -29,7 +29,6 @@ Future<bool> confirmDeletion(
   return confirm;
 }
 
-
 Future<void> showErrorDialog(
   BuildContext context, {
   String title = 'Error',

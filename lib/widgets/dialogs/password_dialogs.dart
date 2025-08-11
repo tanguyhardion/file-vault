@@ -30,6 +30,7 @@ Future<String?> promptForPasswordCreation(
             result = passwordController.text;
             Navigator.of(ctx).pop();
           }
+
           return DialogWrapper(
             title: Text(title),
             onEnterPressed: validateAndSubmit,
@@ -45,8 +46,13 @@ Future<String?> promptForPasswordCreation(
                   decoration: InputDecoration(
                     labelText: 'Password',
                     suffixIcon: IconButton(
-                      icon: Icon(passwordVisible ? Icons.visibility : Icons.visibility_off),
-                      onPressed: () => setState(() => passwordVisible = !passwordVisible),
+                      icon: Icon(
+                        passwordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () =>
+                          setState(() => passwordVisible = !passwordVisible),
                     ),
                   ),
                 ),
@@ -57,8 +63,13 @@ Future<String?> promptForPasswordCreation(
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
                     suffixIcon: IconButton(
-                      icon: Icon(confirmVisible ? Icons.visibility : Icons.visibility_off),
-                      onPressed: () => setState(() => confirmVisible = !confirmVisible),
+                      icon: Icon(
+                        confirmVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () =>
+                          setState(() => confirmVisible = !confirmVisible),
                     ),
                   ),
                   onSubmitted: (_) => validateAndSubmit(),
@@ -111,8 +122,11 @@ Future<String?> promptForPassword(
               decoration: InputDecoration(
                 labelText: 'Password',
                 suffixIcon: IconButton(
-                  icon: Icon(passwordVisible ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => passwordVisible = !passwordVisible),
+                  icon: Icon(
+                    passwordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () =>
+                      setState(() => passwordVisible = !passwordVisible),
                 ),
               ),
               onSubmitted: (_) => submit(),
@@ -156,8 +170,11 @@ Future<String?> promptForPasswordWithVerification(
               decoration: InputDecoration(
                 labelText: 'Password',
                 suffixIcon: IconButton(
-                  icon: Icon(passwordVisible ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => passwordVisible = !passwordVisible),
+                  icon: Icon(
+                    passwordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () =>
+                      setState(() => passwordVisible = !passwordVisible),
                 ),
               ),
               onSubmitted: (_) => submit(),

@@ -8,7 +8,7 @@ class DialogWrapper extends StatelessWidget {
   final List<Widget>? actions;
   final VoidCallback? onEnterPressed;
   final bool useCtrlEnter;
-  
+
   // Common action buttons
   final VoidCallback? onCancel;
   final VoidCallback? onConfirm;
@@ -44,7 +44,10 @@ class DialogWrapper extends StatelessWidget {
           TextButton(onPressed: onCancel, child: Text(cancelText)),
         if (onConfirm != null)
           isDestructive
-              ? FilledButton.tonal(onPressed: onConfirm, child: Text(confirmText))
+              ? FilledButton.tonal(
+                  onPressed: onConfirm,
+                  child: Text(confirmText),
+                )
               : FilledButton(onPressed: onConfirm, child: Text(confirmText)),
       ];
     } else {
@@ -53,10 +56,7 @@ class DialogWrapper extends StatelessWidget {
 
     Widget dialog = Dialog(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: 500,
-          maxHeight: 600,
-        ),
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
         child: IntrinsicWidth(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -103,8 +103,10 @@ class DialogWrapper extends StatelessWidget {
     if (onEnterPressed != null) {
       final shortcuts = useCtrlEnter
           ? <LogicalKeySet, Intent>{
-              LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter):
-                  const ActivateIntent(),
+              LogicalKeySet(
+                LogicalKeyboardKey.control,
+                LogicalKeyboardKey.enter,
+              ): const ActivateIntent(),
             }
           : <LogicalKeySet, Intent>{
               LogicalKeySet(LogicalKeyboardKey.enter): const ActivateIntent(),

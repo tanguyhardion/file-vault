@@ -37,7 +37,7 @@ class RecentVaultItem extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12.0),
         ),
-        hoverColor: showHoverEffect 
+        hoverColor: showHoverEffect
             ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
             : null,
       ),

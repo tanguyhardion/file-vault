@@ -17,6 +17,7 @@ class VaultController extends ChangeNotifier {
     await RecentVaultsService.add(dir);
     notifyListeners();
   }
+
   String? _vaultDir;
   String? _vaultPassword;
   List<VaultFileEntry> _files = [];
@@ -42,14 +43,21 @@ class VaultController extends ChangeNotifier {
     return contents.contains('password_hash:');
   }
 
-  Future<void> _createVaultMarker(String dir, {required String password}) async {
+  Future<void> _createVaultMarker(
+    String dir, {
+    required String password,
+  }) async {
     final marker = File('$dir/$vaultMarkerFile');
     final now = DateTime.now().toUtc().toIso8601String();
     // Generate salt
     final salt = CryptoService.randomSalt();
     // Hash password
-    final hash = await CryptoService.hashPassword(password: password, salt: salt);
-    final contents = 'vault_version: 1\ncreated_at: $now\nsalt: ${base64Encode(salt)}\npassword_hash: ${base64Encode(hash)}\n';
+    final hash = await CryptoService.hashPassword(
+      password: password,
+      salt: salt,
+    );
+    final contents =
+        'vault_version: 1\ncreated_at: $now\nsalt: ${base64Encode(salt)}\npassword_hash: ${base64Encode(hash)}\n';
     await marker.writeAsString(contents, flush: true);
   }
 
@@ -59,9 +67,11 @@ class VaultController extends ChangeNotifier {
       // Check marker file
       final hasMarker = await checkVaultMarker(dir);
       if (!hasMarker) {
-        throw Exception('Selected folder is not a valid vault (missing marker file).');
+        throw Exception(
+          'Selected folder is not a valid vault (missing marker file).',
+        );
       }
-      
+
       // Don't set vault state yet - wait for password verification
       // Just store to recent list for now
       await RecentVaultsService.add(dir);
@@ -84,18 +94,28 @@ class VaultController extends ChangeNotifier {
   /// Verifies a password for a specific vault directory by attempting to decrypt an existing file.
   /// Returns the list of files if password is correct, null if incorrect.
   /// If no files exist, returns empty list (password can't be verified but is assumed correct).
-  Future<List<VaultFileEntry>?> verifyPasswordForVault(String vaultDir, String password) async {
+  Future<List<VaultFileEntry>?> verifyPasswordForVault(
+    String vaultDir,
+    String password,
+  ) async {
     try {
       // Read marker file
       final marker = File('$vaultDir/$vaultMarkerFile');
       if (!await marker.exists()) return null;
       final contents = await marker.readAsString();
-      final saltLine = contents.split('\n').firstWhere((l) => l.startsWith('salt: '), orElse: () => '');
-      final hashLine = contents.split('\n').firstWhere((l) => l.startsWith('password_hash: '), orElse: () => '');
+      final saltLine = contents
+          .split('\n')
+          .firstWhere((l) => l.startsWith('salt: '), orElse: () => '');
+      final hashLine = contents
+          .split('\n')
+          .firstWhere((l) => l.startsWith('password_hash: '), orElse: () => '');
       if (saltLine.isEmpty || hashLine.isEmpty) return null;
       final salt = base64Decode(saltLine.substring(6).trim());
       final storedHash = base64Decode(hashLine.substring(15).trim());
-      final inputHash = await CryptoService.hashPassword(password: password, salt: salt);
+      final inputHash = await CryptoService.hashPassword(
+        password: password,
+        salt: salt,
+      );
       if (!ListEquality().equals(storedHash, inputHash)) {
         return null;
       }
