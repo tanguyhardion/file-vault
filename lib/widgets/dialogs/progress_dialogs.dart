@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'dialog_wrapper.dart';
 
 /// Shows a blocking dialog with a loading indicator and custom message.

@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:file_vault/services/crypto_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:file_vault/services/crypto_service.dart';
 
 void main() {
   test('encrypt/decrypt empty string roundtrip', () async {

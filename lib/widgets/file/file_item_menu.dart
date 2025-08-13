@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+enum _MenuAction { rename, delete }
+
 class FileItemMenu extends StatelessWidget {
   final VoidCallback onOpen;
   final VoidCallback onClose;
@@ -77,5 +79,3 @@ class FileItemMenu extends StatelessWidget {
     );
   }
 }
-
-enum _MenuAction { rename, delete }
