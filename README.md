@@ -6,10 +6,26 @@ A simple Flutter app for securely managing and encrypting files on Windows. All 
 
 ## Features
 
-- Local file storage and strong encryption
-- Simple, user-friendly interface
-- Fast search and organization
+- Secure local file storage: Everything stays on your device, with strong AES-GCM encryption (.fva format) and password-protected vaults
+- Fast search, file organization, and recent vaults
+- Encrypted backup and restore support
+- File operations: create, rename, delete, open, save
+- Responsive, user-friendly interface (crypto runs in background isolates)
 - Windows support (other platforms planned)
+
+### Encryption & Security
+
+File Vault is designed to keep your files safe and private. Here’s how it works:
+
+- **AES-GCM 256-bit encryption**: Every file is encrypted using industry-standard AES-GCM with a 256-bit key.
+- **Password-based key derivation**: Your password is never stored. Instead, a strong encryption key is derived using PBKDF2-HMAC-SHA256 (150,000 iterations, 16-byte salt).
+- **Unique salt and nonce per file**: Each file uses a unique salt and nonce, making brute-force and rainbow table attacks useless.
+- **Authenticated encryption**: Every file includes a 16-byte GCM tag (MAC) to ensure integrity and detect tampering.
+- **Local-only**: All encryption and decryption happens on your device. No data ever leaves your computer.
+- **Encrypted backups**: Backups are always encrypted. You can safely store them anywhere, including cloud folders (e.g., OneDrive, iCloud).
+- **Zero knowledge**: The app never knows or stores your password or unencrypted data.
+
+If you lose your password, your files cannot be recovered—no backdoors, no tricks. Your secrets stay yours.
 
 ## Getting Started
 

@@ -57,8 +57,9 @@ class VaultController extends ChangeNotifier {
             orElse: () => '',
           );
 
-      if (autoBackupLine.isEmpty)
+      if (autoBackupLine.isEmpty) {
         return false; // Default to disabled for older vaults
+      }
 
       final value = autoBackupLine
           .substring(21)
