@@ -42,7 +42,7 @@ class _BackupDialogState extends State<_BackupDialog> {
     final lastPath = await BackupPathsService.getLastBackupPath();
     if (lastPath != null && mounted) {
       final suggestedFilePath = BackupPathsService.generateBackupFileName(
-        widget.vaultName, 
+        widget.vaultName,
         lastPath,
       );
       setState(() {
@@ -79,7 +79,8 @@ class _BackupDialogState extends State<_BackupDialog> {
                     style: TextStyle(
                       color: _selectedPath != null
                           ? Theme.of(context).textTheme.bodyMedium?.color
-                          : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                          : Theme.of(context).textTheme.bodyMedium?.color
+                                ?.withValues(alpha: 0.6),
                     ),
                   ),
                 ),
@@ -91,19 +92,19 @@ class _BackupDialogState extends State<_BackupDialog> {
               ],
             ),
           ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.grey),
-                SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    "Recommended: Save to a cloud-synced folder (e.g. OneDrive, iCloud). Your backups consist only of encrypted data.",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 16, color: Colors.grey),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  "Recommended: Save to a cloud-synced folder (e.g. OneDrive, iCloud). Your backups consist only of encrypted data.",
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
           if (_isLoading) ...[
             const SizedBox(height: 16),
             const LinearProgressIndicator(),
@@ -116,9 +117,9 @@ class _BackupDialogState extends State<_BackupDialog> {
       onConfirm: _isLoading || _selectedPath == null
           ? null
           : () {
-              Navigator.of(context).pop(
-                BackupDialogResult(selectedPath: _selectedPath!),
-              );
+              Navigator.of(
+                context,
+              ).pop(BackupDialogResult(selectedPath: _selectedPath!));
             },
       confirmText: 'Backup',
     );
@@ -127,15 +128,13 @@ class _BackupDialogState extends State<_BackupDialog> {
   Future<void> _selectPath() async {
     // Get the last backup path to use as initial directory
     final lastBackupPath = await BackupPathsService.getLastBackupPath();
-    
+
     final result = await getSaveLocation(
-      suggestedName: '${widget.vaultName}_backup_${DateTime.now().toIso8601String().split('T')[0]}.zip',
+      suggestedName:
+          '${widget.vaultName}_backup_${DateTime.now().toIso8601String().split('T')[0]}.zip',
       initialDirectory: lastBackupPath,
       acceptedTypeGroups: [
-        const XTypeGroup(
-          label: 'ZIP files',
-          extensions: ['zip'],
-        ),
+        const XTypeGroup(label: 'ZIP files', extensions: ['zip']),
       ],
     );
 

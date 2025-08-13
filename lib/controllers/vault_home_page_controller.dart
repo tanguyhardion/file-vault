@@ -184,7 +184,7 @@ class VaultHomePageController extends ChangeNotifier {
           // Password is correct, set the vault as open
           vaultController.setVaultOpen(dir, pw, files);
           passwordVerified = true;
-          
+
           // Perform automatic backup if enabled
           await _performAutoBackupIfEnabled(dir);
         } else {
@@ -305,12 +305,12 @@ class VaultHomePageController extends ChangeNotifier {
 
   void closeVault() async {
     final vaultDir = vaultController.vaultDir;
-    
+
     // Perform automatic backup if enabled before closing
     if (vaultDir != null) {
       await _performAutoBackupIfEnabled(vaultDir);
     }
-    
+
     vaultController.closeVault();
     fileOperationsController.closeFile();
     searchController.clearSearch();
@@ -453,7 +453,7 @@ class VaultHomePageController extends ChangeNotifier {
 
     final vaultName = p.basename(vaultDir);
     final result = await showBackupDialog(context, vaultName: vaultName);
-    
+
     if (result == null) return false; // User cancelled, not an error
 
     try {
@@ -469,15 +469,20 @@ class VaultHomePageController extends ChangeNotifier {
   /// Perform automatic backup if enabled for the vault
   Future<void> _performAutoBackupIfEnabled(String vaultDir) async {
     try {
-      final isAutoBackupEnabled = await vaultController.getAutoBackupEnabled(vaultDir);
+      final isAutoBackupEnabled = await vaultController.getAutoBackupEnabled(
+        vaultDir,
+      );
       if (!isAutoBackupEnabled) return;
 
       final lastBackupPath = await BackupPathsService.getLastBackupPath();
       if (lastBackupPath == null) return; // No backup path configured
 
       final vaultName = p.basename(vaultDir);
-      final backupFileName = BackupPathsService.generateBackupFileName(vaultName, lastBackupPath);
-      
+      final backupFileName = BackupPathsService.generateBackupFileName(
+        vaultName,
+        lastBackupPath,
+      );
+
       await _performBackup(vaultDir, backupFileName);
     } catch (e) {
       // Silently fail auto backups to not interrupt user workflow
@@ -492,7 +497,7 @@ class VaultHomePageController extends ChangeNotifier {
 
     final currentSetting = await vaultController.getAutoBackupEnabled(vaultDir);
     final result = await showAutoBackupSettingsDialog(context, currentSetting);
-    
+
     if (result != null) {
       await vaultController.setAutoBackupEnabled(vaultDir, result);
       // If enabling auto backup and no backup path is set, prompt user to set one
@@ -505,7 +510,8 @@ class VaultHomePageController extends ChangeNotifier {
             await showInfoDialog(
               context,
               title: 'Auto Backup Disabled',
-              message: 'Auto backup was disabled because no backup location was configured.',
+              message:
+                  'Auto backup was disabled because no backup location was configured.',
             );
           }
         }

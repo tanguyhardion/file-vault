@@ -140,9 +140,9 @@ mixin VaultEventHandlers<T extends StatefulWidget> on State<T> {
       await controller.showAutoBackupSettings(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to update settings: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update settings: $e')),
+        );
       }
     }
   }

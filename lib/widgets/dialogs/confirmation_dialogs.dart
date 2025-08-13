@@ -79,7 +79,8 @@ class _AutoBackupSettingsDialog extends StatefulWidget {
   const _AutoBackupSettingsDialog({required this.currentSetting});
 
   @override
-  State<_AutoBackupSettingsDialog> createState() => _AutoBackupSettingsDialogState();
+  State<_AutoBackupSettingsDialog> createState() =>
+      _AutoBackupSettingsDialogState();
 }
 
 class _AutoBackupSettingsDialogState extends State<_AutoBackupSettingsDialog> {
@@ -115,9 +116,7 @@ class _AutoBackupSettingsDialogState extends State<_AutoBackupSettingsDialog> {
                 },
               ),
               const SizedBox(width: 12),
-              const Expanded(
-                child: Text('Enable automatic backup'),
-              ),
+              const Expanded(child: Text('Enable automatic backup')),
             ],
           ),
           if (_autoBackupEnabled) ...[

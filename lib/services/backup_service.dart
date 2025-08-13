@@ -10,7 +10,7 @@ class BackupPathsService {
   static Future<String?> getLastBackupPath() async {
     final prefs = await SharedPreferences.getInstance();
     final lastPath = prefs.getString(_prefsKey);
-    
+
     // Verify the directory still exists before returning it
     if (lastPath != null) {
       final directory = Directory(lastPath);
@@ -21,7 +21,7 @@ class BackupPathsService {
         await prefs.remove(_prefsKey);
       }
     }
-    
+
     return null;
   }
 

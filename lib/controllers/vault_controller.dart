@@ -48,15 +48,21 @@ class VaultController extends ChangeNotifier {
     try {
       final marker = File('$dir/$vaultMarkerFile');
       if (!await marker.exists()) return false;
-      
+
       final contents = await marker.readAsString();
       final autoBackupLine = contents
           .split('\n')
-          .firstWhere((l) => l.startsWith('auto_backup_enabled: '), orElse: () => '');
-      
-      if (autoBackupLine.isEmpty) return false; // Default to disabled for older vaults
-      
-      final value = autoBackupLine.substring(21).trim(); // Remove "auto_backup_enabled: "
+          .firstWhere(
+            (l) => l.startsWith('auto_backup_enabled: '),
+            orElse: () => '',
+          );
+
+      if (autoBackupLine.isEmpty)
+        return false; // Default to disabled for older vaults
+
+      final value = autoBackupLine
+          .substring(21)
+          .trim(); // Remove "auto_backup_enabled: "
       return value.toLowerCase() == 'true';
     } catch (e) {
       return false;
@@ -68,10 +74,10 @@ class VaultController extends ChangeNotifier {
     try {
       final marker = File('$dir/$vaultMarkerFile');
       if (!await marker.exists()) return;
-      
+
       final contents = await marker.readAsString();
       final lines = contents.split('\n');
-      
+
       // Find and update the auto_backup_enabled line, or add it
       bool found = false;
       for (int i = 0; i < lines.length; i++) {
@@ -81,7 +87,7 @@ class VaultController extends ChangeNotifier {
           break;
         }
       }
-      
+
       // If not found, add it before the last empty line
       if (!found) {
         // Remove empty lines at the end, add our setting, then add one empty line
@@ -91,7 +97,7 @@ class VaultController extends ChangeNotifier {
         lines.add('auto_backup_enabled: $enabled');
         lines.add(''); // Add empty line at the end
       }
-      
+
       await marker.writeAsString(lines.join('\n'), flush: true);
     } catch (e) {
       // Silently fail - auto backup setting is not critical
@@ -184,11 +190,19 @@ class VaultController extends ChangeNotifier {
     }
   }
 
-  Future<void> createVault(String dir, String password, {bool autoBackupEnabled = false}) async {
+  Future<void> createVault(
+    String dir,
+    String password, {
+    bool autoBackupEnabled = false,
+  }) async {
     _vaultDir = dir;
     _vaultPassword = password;
     _files = [];
-    await _createVaultMarker(dir, password: password, autoBackupEnabled: autoBackupEnabled);
+    await _createVaultMarker(
+      dir,
+      password: password,
+      autoBackupEnabled: autoBackupEnabled,
+    );
     await RecentVaultsService.add(dir);
     notifyListeners();
   }
