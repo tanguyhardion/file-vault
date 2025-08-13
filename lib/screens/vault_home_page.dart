@@ -58,35 +58,57 @@ class _VaultHomePageState extends State<VaultHomePage> {
     return AppBar(
       title: const Text('File Vault'),
       actions: [
-        // Create new vault first
+        // Open vault
+        IconButton(
+          tooltip: 'Open vault',
+          icon: const Icon(Icons.folder_open),
+          onPressed: _onOpenVault,
+        ),
+        // Open recent vaults
+        IconButton(
+          tooltip: 'Open recent vaults',
+          icon: const Icon(Icons.history),
+          onPressed: _onShowRecentVaults,
+        ),
+        // Create new vault (no separator)
         IconButton(
           tooltip: 'Create new vault',
           icon: const Icon(Icons.create_new_folder_outlined),
           onPressed: _onCreateVault,
         ),
+        // Separator
         Container(
           width: 1,
           height: kToolbarHeight - 32,
           color: Divider.createBorderSide(context).color,
           margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
         ),
-        // Group: Open vault, Open recent, Close vault
-        IconButton(
-          tooltip: 'Open vault',
-          icon: const Icon(Icons.folder_open),
-          onPressed: _onOpenVault,
-        ),
-        IconButton(
-          tooltip: 'Open recent vaults',
-          icon: const Icon(Icons.history),
-          onPressed: _onShowRecentVaults,
-        ),
-        if (_controller.vaultController.vaultDir != null)
+        // Backup buttons (only shown when vault is open)
+        if (_controller.vaultController.vaultDir != null) ...[
+          IconButton(
+            tooltip: 'Backup vault',
+            icon: const Icon(Icons.backup),
+            onPressed: _onBackupVault,
+          ),
+          IconButton(
+            tooltip: 'Auto backup settings',
+            icon: const Icon(Icons.settings_backup_restore),
+            onPressed: _onAutoBackupSettings,
+          ),
+          // Separator
+          Container(
+            width: 1,
+            height: kToolbarHeight - 32,
+            color: Divider.createBorderSide(context).color,
+            margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
+          ),
+          // Close vault
           IconButton(
             tooltip: 'Close vault',
             icon: const Icon(Icons.close),
             onPressed: _controller.closeVault,
           ),
+        ],
         const SizedBox(width: 8),
       ],
     );
@@ -125,7 +147,10 @@ class _VaultHomePageState extends State<VaultHomePage> {
             ],
           ),
         ),
-        const VerticalDivider(width: 1),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: VerticalDivider(width: 1),
+        ),
         // Main view
         Expanded(child: _buildMainContent()),
       ],
@@ -346,6 +371,38 @@ class _VaultHomePageState extends State<VaultHomePage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+      }
+    }
+  }
+
+  Future<void> _onBackupVault() async {
+    try {
+      final success = await _controller.backupVault(context);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vault backup created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to backup: $e')));
+      }
+    }
+  }
+
+  Future<void> _onAutoBackupSettings() async {
+    try {
+      await _controller.showAutoBackupSettings(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update settings: $e')));
       }
     }
   }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:archive/archive_io.dart';
+import 'package:path/path.dart' as p;
 
 import '../models/vault_models.dart';
 import '../services/recent_vaults_service.dart';
-import '../widgets/dialogs/dialog_wrapper.dart';
-import '../widgets/dialogs/confirmation_dialogs.dart';
+import '../services/backup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/vault_service.dart';
 import '../widgets/widgets.dart';
@@ -183,6 +184,9 @@ class VaultHomePageController extends ChangeNotifier {
           // Password is correct, set the vault as open
           vaultController.setVaultOpen(dir, pw, files);
           passwordVerified = true;
+          
+          // Perform automatic backup if enabled
+          await _performAutoBackupIfEnabled(dir);
         } else {
           // Show error and retry
           if (ctx.mounted) {
@@ -299,7 +303,14 @@ class VaultHomePageController extends ChangeNotifier {
     await _loadRecent();
   }
 
-  void closeVault() {
+  void closeVault() async {
+    final vaultDir = vaultController.vaultDir;
+    
+    // Perform automatic backup if enabled before closing
+    if (vaultDir != null) {
+      await _performAutoBackupIfEnabled(vaultDir);
+    }
+    
     vaultController.closeVault();
     fileOperationsController.closeFile();
     searchController.clearSearch();
@@ -432,5 +443,100 @@ class VaultHomePageController extends ChangeNotifier {
       return;
     }
     throw UnsupportedError('Opening folder is not supported on this platform');
+  }
+
+  Future<bool> backupVault(BuildContext context) async {
+    final vaultDir = vaultController.vaultDir;
+    if (vaultDir == null) {
+      throw Exception('No vault is currently open');
+    }
+
+    final vaultName = p.basename(vaultDir);
+    final result = await showBackupDialog(context, vaultName: vaultName);
+    
+    if (result == null) return false; // User cancelled, not an error
+
+    try {
+      await _performBackup(vaultDir, result.selectedPath);
+      // Save the backup path for next time
+      await BackupPathsService.saveBackupPath(result.selectedPath);
+      return true; // Success
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Perform automatic backup if enabled for the vault
+  Future<void> _performAutoBackupIfEnabled(String vaultDir) async {
+    try {
+      final isAutoBackupEnabled = await vaultController.getAutoBackupEnabled(vaultDir);
+      if (!isAutoBackupEnabled) return;
+
+      final lastBackupPath = await BackupPathsService.getLastBackupPath();
+      if (lastBackupPath == null) return; // No backup path configured
+
+      final vaultName = p.basename(vaultDir);
+      final backupFileName = BackupPathsService.generateBackupFileName(vaultName, lastBackupPath);
+      
+      await _performBackup(vaultDir, backupFileName);
+    } catch (e) {
+      // Silently fail auto backups to not interrupt user workflow
+      // Could optionally log this error or show a non-blocking notification
+    }
+  }
+
+  /// Show auto backup settings dialog
+  Future<void> showAutoBackupSettings(BuildContext context) async {
+    final vaultDir = vaultController.vaultDir;
+    if (vaultDir == null) return;
+
+    final currentSetting = await vaultController.getAutoBackupEnabled(vaultDir);
+    final result = await showAutoBackupSettingsDialog(context, currentSetting);
+    
+    if (result != null) {
+      await vaultController.setAutoBackupEnabled(vaultDir, result);
+      // If enabling auto backup and no backup path is set, prompt user to set one
+      if (result && await BackupPathsService.getLastBackupPath() == null) {
+        if (context.mounted) {
+          final backupResult = await backupVault(context);
+          if (!backupResult && context.mounted) {
+            // User cancelled the backup, so disable auto backup
+            await vaultController.setAutoBackupEnabled(vaultDir, false);
+            await showInfoDialog(
+              context,
+              title: 'Auto Backup Disabled',
+              message: 'Auto backup was disabled because no backup location was configured.',
+            );
+          }
+        }
+      }
+    }
+  }
+
+  /// Core backup implementation shared by manual and automatic backups
+  Future<void> _performBackup(String vaultDir, String outputPath) async {
+    // Create archive
+    final archive = Archive();
+    final directory = Directory(vaultDir);
+
+    // Add all files from the vault directory to the archive
+    await for (final entity in directory.list(recursive: true)) {
+      if (entity is File) {
+        final relativePath = p.relative(entity.path, from: vaultDir);
+        final bytes = await entity.readAsBytes();
+        final file = ArchiveFile(relativePath, bytes.length, bytes);
+        archive.addFile(file);
+      }
+    }
+
+    // Encode the archive to ZIP format
+    final zipData = ZipEncoder().encode(archive);
+    if (zipData == null) {
+      throw Exception('Failed to create ZIP archive');
+    }
+
+    // Write the ZIP file
+    final outputFile = File(outputPath);
+    await outputFile.writeAsBytes(zipData);
   }
 }
