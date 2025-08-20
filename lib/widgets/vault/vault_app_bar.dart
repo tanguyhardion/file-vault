@@ -37,21 +37,21 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.history),
           onPressed: onShowRecentVaults,
         ),
-        // Create new vault (no separator)
+        // Create new vault
         IconButton(
           tooltip: 'Create new vault',
           icon: const Icon(Icons.create_new_folder_outlined),
           onPressed: onCreateVault,
         ),
-        // Separator
-        Container(
-          width: 1,
-          height: kToolbarHeight - 32,
-          color: Divider.createBorderSide(context).color,
-          margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
-        ),
         // Backup buttons (only shown when vault is open)
         if (controller.vaultController.vaultDir != null) ...[
+          // Separator
+          Container(
+            width: 1,
+            height: kToolbarHeight - 32,
+            color: Divider.createBorderSide(context).color,
+            margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
+          ),
           IconButton(
             tooltip: 'Backup vault',
             icon: const Icon(Icons.backup),
