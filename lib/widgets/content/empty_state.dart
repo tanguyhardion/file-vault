@@ -6,12 +6,14 @@ class EmptyState extends StatelessWidget {
   final List<String> recentVaults;
   final void Function(String path) onOpenRecent;
   final VoidCallback? onShowAllRecent;
+  final bool isVaultOpen;
 
   const EmptyState({
     super.key,
     required this.recentVaults,
     required this.onOpenRecent,
     this.onShowAllRecent,
+    required this.isVaultOpen,
   });
 
   @override
@@ -20,11 +22,14 @@ class EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.lock_outline, size: 56),
-          const SizedBox(height: 12),
-          const Text('Select a file to view its content'),
-          if (recentVaults.isNotEmpty) ...[
-            const SizedBox(height: 32),
+          // If a vault is open, show the "select a file" message
+          if (isVaultOpen) ...[
+            const Icon(Icons.lock_outline, size: 56),
+            const SizedBox(height: 12),
+            const Text('Select a file to view its content'),
+          ],
+          // If no vault is open, only show recent vaults
+          if (!isVaultOpen && recentVaults.isNotEmpty) ...[
             Container(
               constraints: const BoxConstraints(maxWidth: 400),
               child: Column(

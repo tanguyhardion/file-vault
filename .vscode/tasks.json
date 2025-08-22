@@ -48,7 +48,7 @@
       "group": "build"
     },
     {
-      "label": "flutter: run windows",
+      "label": "flutter: run windows (debug)",
       "type": "shell",
       "command": "flutter run -d windows",
       "isBackground": false,

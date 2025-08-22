@@ -496,6 +496,8 @@ class VaultHomePageController extends ChangeNotifier {
     if (vaultDir == null) return;
 
     final currentSetting = await vaultController.getAutoBackupEnabled(vaultDir);
+    if (!context.mounted) return;
+
     final result = await showAutoBackupSettingsDialog(context, currentSetting);
 
     if (result != null) {
@@ -507,12 +509,14 @@ class VaultHomePageController extends ChangeNotifier {
           if (!backupResult && context.mounted) {
             // User cancelled the backup, so disable auto backup
             await vaultController.setAutoBackupEnabled(vaultDir, false);
-            await showInfoDialog(
-              context,
-              title: 'Auto Backup Disabled',
-              message:
-                  'Auto backup was disabled because no backup location was configured.',
-            );
+            if (context.mounted) {
+              await showInfoDialog(
+                context,
+                title: 'Auto Backup Disabled',
+                message:
+                    'Auto backup was disabled because no backup location was configured.',
+              );
+            }
           }
         }
       }

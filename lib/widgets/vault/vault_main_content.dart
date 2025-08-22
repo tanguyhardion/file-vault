@@ -27,6 +27,7 @@ class VaultMainContent extends StatelessWidget {
         recentVaults: controller.recentVaults,
         onOpenRecent: onOpenRecent,
         onShowAllRecent: onShowAllRecent,
+        isVaultOpen: controller.vaultController.isVaultOpen,
       );
     }
 
