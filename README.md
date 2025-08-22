@@ -65,7 +65,3 @@ Pull requests are welcome! For major changes, please open an issue first.
 ## License
 
 MIT License
-
----
-
-For more info, see the [Flutter documentation](https://docs.flutter.dev/).

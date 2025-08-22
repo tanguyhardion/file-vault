@@ -25,7 +25,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  if (!window.CreateWithSavedState(L"file_vault")) {
+  if (!window.CreateWithSavedState(L"File Vault")) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
