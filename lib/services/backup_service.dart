@@ -44,4 +44,40 @@ class BackupPathsService {
     final fileName = '${vaultName}_backup_$date.zip';
     return p.join(directory, fileName);
   }
+
+  /// Find all existing backup files for a given vault in the specified directory
+  static Future<List<String>> findExistingBackupFiles(String vaultName, String directory) async {
+    final dir = Directory(directory);
+    if (!await dir.exists()) return [];
+
+    final backupFiles = <String>[];
+    final pattern = RegExp(r'^' + RegExp.escape(vaultName) + r'_backup_\d{4}-\d{2}-\d{2}\.zip$');
+
+    await for (final entity in dir.list(recursive: false)) {
+      if (entity is File) {
+        final fileName = p.basename(entity.path);
+        if (pattern.hasMatch(fileName)) {
+          backupFiles.add(entity.path);
+        }
+      }
+    }
+
+    return backupFiles;
+  }
+
+  /// Delete all existing backup files for a given vault in the specified directory
+  static Future<void> deletePreviousBackups(String vaultName, String directory) async {
+    try {
+      final existingBackups = await findExistingBackupFiles(vaultName, directory);
+      for (final backupPath in existingBackups) {
+        final file = File(backupPath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      }
+    } catch (e) {
+      // Silently fail deletion of previous backups - not critical for backup operation
+      // The new backup will still be created successfully
+    }
+  }
 }
