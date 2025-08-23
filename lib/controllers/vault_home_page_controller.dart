@@ -478,10 +478,10 @@ class VaultHomePageController extends ChangeNotifier {
       if (lastBackupPath == null) return; // No backup path configured
 
       final vaultName = p.basename(vaultDir);
-      
+
       // Delete previous backup files before creating new one
       await BackupPathsService.deletePreviousBackups(vaultName, lastBackupPath);
-      
+
       final backupFileName = BackupPathsService.generateBackupFileName(
         vaultName,
         lastBackupPath,

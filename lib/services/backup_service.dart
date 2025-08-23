@@ -46,12 +46,17 @@ class BackupPathsService {
   }
 
   /// Find all existing backup files for a given vault in the specified directory
-  static Future<List<String>> findExistingBackupFiles(String vaultName, String directory) async {
+  static Future<List<String>> findExistingBackupFiles(
+    String vaultName,
+    String directory,
+  ) async {
     final dir = Directory(directory);
     if (!await dir.exists()) return [];
 
     final backupFiles = <String>[];
-    final pattern = RegExp(r'^' + RegExp.escape(vaultName) + r'_backup_\d{4}-\d{2}-\d{2}\.zip$');
+    final pattern = RegExp(
+      r'^' + RegExp.escape(vaultName) + r'_backup_\d{4}-\d{2}-\d{2}\.zip$',
+    );
 
     await for (final entity in dir.list(recursive: false)) {
       if (entity is File) {
@@ -66,9 +71,15 @@ class BackupPathsService {
   }
 
   /// Delete all existing backup files for a given vault in the specified directory
-  static Future<void> deletePreviousBackups(String vaultName, String directory) async {
+  static Future<void> deletePreviousBackups(
+    String vaultName,
+    String directory,
+  ) async {
     try {
-      final existingBackups = await findExistingBackupFiles(vaultName, directory);
+      final existingBackups = await findExistingBackupFiles(
+        vaultName,
+        directory,
+      );
       for (final backupPath in existingBackups) {
         final file = File(backupPath);
         if (await file.exists()) {
