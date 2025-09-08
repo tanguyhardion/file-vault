@@ -15,24 +15,6 @@ WindowStateManager::~WindowStateManager() {}
 
 WindowState WindowStateManager::LoadWindowState() {
   WindowState state;
-  
-  // Check if this is the first launch
-  state.is_first_launch = ReadDWORDFromRegistry(kFirstLaunchValueName, 1) != 0;
-  
-  if (state.is_first_launch) {
-    // First launch: start maximized
-    state.is_maximized = true;
-    // Mark as no longer first launch
-    WriteDWORDToRegistry(kFirstLaunchValueName, 0);
-  } else {
-    // Load saved state
-    state.x = static_cast<int>(ReadDWORDFromRegistry(kXValueName, 100));
-    state.y = static_cast<int>(ReadDWORDFromRegistry(kYValueName, 100));
-    state.width = static_cast<int>(ReadDWORDFromRegistry(kWidthValueName, 1280));
-    state.height = static_cast<int>(ReadDWORDFromRegistry(kHeightValueName, 720));
-    state.is_maximized = ReadDWORDFromRegistry(kMaximizedValueName, 0) != 0;
-  }
-  
   return state;
 }
 
