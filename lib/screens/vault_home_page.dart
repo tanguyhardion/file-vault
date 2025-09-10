@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../controllers/vault_home_page_controller.dart';
 import '../mixins/vault_event_handlers.dart';
-import '../shortcuts/save_intent.dart';
+import '../shortcuts/vault_intents.dart';
 import '../widgets/vault/vault_app_bar.dart';
 import '../widgets/vault/vault_left_panel.dart';
 import '../widgets/vault/vault_main_content.dart';
@@ -42,6 +42,18 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
       shortcuts: <LogicalKeySet, Intent>{
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS):
             const SaveIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO):
+            const OpenVaultIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyR):
+            const ShowRecentVaultsIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN):
+            const CreateVaultIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB):
+            const BackupVaultIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyB):
+            const AutoBackupSettingsIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyW):
+            const CloseVaultIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -50,6 +62,24 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
               _controller.handleSaveShortcut();
               return null;
             },
+          ),
+          OpenVaultIntent: CallbackAction<OpenVaultIntent>(
+            onInvoke: (intent) => onOpenVault(),
+          ),
+          ShowRecentVaultsIntent: CallbackAction<ShowRecentVaultsIntent>(
+            onInvoke: (intent) => onShowRecentVaults(),
+          ),
+          CreateVaultIntent: CallbackAction<CreateVaultIntent>(
+            onInvoke: (intent) => onCreateVault(),
+          ),
+          BackupVaultIntent: CallbackAction<BackupVaultIntent>(
+            onInvoke: (intent) => onBackupVault(),
+          ),
+          AutoBackupSettingsIntent: CallbackAction<AutoBackupSettingsIntent>(
+            onInvoke: (intent) => onAutoBackupSettings(),
+          ),
+          CloseVaultIntent: CallbackAction<CloseVaultIntent>(
+            onInvoke: (intent) => _controller.closeVault(),
           ),
         },
         child: Focus(

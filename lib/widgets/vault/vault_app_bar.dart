@@ -27,19 +27,19 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         // Open vault
         IconButton(
-          tooltip: 'Open vault',
+          tooltip: 'Open vault (Ctrl+O)',
           icon: const Icon(Icons.folder_open),
           onPressed: onOpenVault,
         ),
         // Open recent vaults
         IconButton(
-          tooltip: 'Open recent vaults',
+          tooltip: 'Open recent vaults (Ctrl+R)',
           icon: const Icon(Icons.history),
           onPressed: onShowRecentVaults,
         ),
         // Create new vault
         IconButton(
-          tooltip: 'Create new vault',
+          tooltip: 'Create new vault (Ctrl+N)',
           icon: const Icon(Icons.create_new_folder_outlined),
           onPressed: onCreateVault,
         ),
@@ -53,12 +53,12 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
             margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
           ),
           IconButton(
-            tooltip: 'Backup vault',
+            tooltip: 'Backup vault (Ctrl+B)',
             icon: const Icon(Icons.backup),
             onPressed: onBackupVault,
           ),
           IconButton(
-            tooltip: 'Auto backup settings',
+            tooltip: 'Auto backup settings (Ctrl+Shift+B)',
             icon: const Icon(Icons.settings_backup_restore),
             onPressed: onAutoBackupSettings,
           ),
@@ -71,7 +71,7 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           // Close vault
           IconButton(
-            tooltip: 'Close vault',
+            tooltip: 'Close vault (Ctrl+W)',
             icon: const Icon(Icons.close),
             onPressed: controller.closeVault,
           ),

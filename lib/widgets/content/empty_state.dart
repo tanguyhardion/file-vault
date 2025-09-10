@@ -24,7 +24,7 @@ class EmptyState extends StatelessWidget {
         children: [
           // If a vault is open, show the "select a file" message
           if (isVaultOpen) ...[
-            const Icon(Icons.lock_outline, size: 56),
+            const Icon(Icons.lock_open, size: 56),
             const SizedBox(height: 12),
             const Text('Select a file to view its content'),
           ],
