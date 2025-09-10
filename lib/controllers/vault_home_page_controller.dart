@@ -226,50 +226,47 @@ class VaultHomePageController extends ChangeNotifier {
   }
 
   Future<void> createVault({BuildContext? context}) async {
-    // Prompt for parent folder
-    final parentDir = await getDirectoryPath();
-    if (parentDir == null) return;
+    if (context == null) {
+      throw ArgumentError('Context is required for vault creation');
+    }
 
-    String? vaultName;
-    String vaultFolderName = '';
+    final ctx = context; // Capture context to avoid lint warning
+    VaultCreationDetails? details;
     String vaultDirPath = '';
     Directory vaultDir;
 
-    // Loop until a valid, non-existing folder name is entered or user cancels
+    // Loop until a valid, non-existing folder is chosen or user cancels
     while (true) {
-      if (context != null && context.mounted) {
-        vaultName = await promptForName(
-          context,
-          title: 'Vault name',
-          label: 'Vault folder name',
-        );
-      } else {
-        throw ArgumentError('Context is required for vault name prompt');
-      }
-      if (vaultName == null || vaultName.trim().isEmpty) return;
-      vaultFolderName = vaultName.trim();
+      // ignore: use_build_context_synchronously
+      details = await promptForVaultCreationDetails(ctx);
+      if (!ctx.mounted) return;
+      if (details == null) return; // User cancelled
+
+      final parentDir = details.path;
+      final vaultName = details.name.trim();
+      if (vaultName.isEmpty) continue; // Should not happen, but safety
 
       vaultDirPath =
           parentDir +
           (parentDir.endsWith("/") || parentDir.endsWith("\\")
               ? ""
               : Platform.pathSeparator) +
-          vaultFolderName;
+          vaultName;
       vaultDir = Directory(vaultDirPath);
       if (await vaultDir.exists()) {
         // Show error dialog if folder exists, then prompt again
-        if (context.mounted) {
+        if (ctx.mounted) {
           await showErrorDialog(
-            context,
+            ctx,
             title: 'Folder Already Exists',
             message:
-                'A folder with the name "$vaultFolderName" already exists. Please choose a different name.',
+                'A folder with the name "$vaultName" already exists in the selected path. Please choose a different name or path.',
           );
         }
         // Continue loop to prompt again
         continue;
       }
-      // Valid name, break loop
+      // Valid, break loop
       break;
     }
 
@@ -278,14 +275,14 @@ class VaultHomePageController extends ChangeNotifier {
 
     // Prompt for password
     String? pw;
-    if (context.mounted) {
+    if (ctx.mounted) {
       pw = await promptForPasswordCreation(
-        context,
+        ctx,
         title: 'Set a password for this vault',
       );
       // Show 'Creating and opening vault...' dialog
-      if (context.mounted) {
-        showLoadingDialog(context, message: 'Creating and opening vault...');
+      if (ctx.mounted) {
+        showLoadingDialog(ctx, message: 'Creating and opening vault...');
       }
     } else {
       throw ArgumentError('Context is required for password prompt');
@@ -294,8 +291,8 @@ class VaultHomePageController extends ChangeNotifier {
 
     await vaultController.createVault(vaultDirPath, pw);
     // Dismiss the vault creation dialog
-    if (context.mounted) {
-      Navigator.of(context).pop();
+    if (ctx.mounted) {
+      Navigator.of(ctx).pop();
     }
     fileOperationsController.closeFile();
     searchController.clearSearch();
