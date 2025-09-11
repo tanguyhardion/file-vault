@@ -60,7 +60,9 @@ Future<VaultCreationDetails?> promptForVaultCreationDetails(
                   Expanded(
                     child: TextField(
                       controller: pathController,
-                      decoration: const InputDecoration(labelText: 'Parent Folder Path'),
+                      decoration: const InputDecoration(
+                        labelText: 'Parent Folder Path',
+                      ),
                       onSubmitted: (_) => submit(),
                     ),
                   ),

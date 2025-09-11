@@ -50,8 +50,11 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
             const CreateVaultIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB):
             const BackupVaultIntent(),
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyB):
-            const AutoBackupSettingsIntent(),
+        LogicalKeySet(
+          LogicalKeyboardKey.control,
+          LogicalKeyboardKey.shift,
+          LogicalKeyboardKey.keyB,
+        ): const AutoBackupSettingsIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyW):
             const CloseVaultIntent(),
       },
@@ -93,7 +96,13 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
               onBackupVault: onBackupVault,
               onAutoBackupSettings: onAutoBackupSettings,
             ),
-            body: _buildBody(),
+            body: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                // Absorb all scroll notifications to prevent them from affecting the AppBar
+                return true;
+              },
+              child: _buildBody(),
+            ),
           ),
         ),
       ),

@@ -24,6 +24,9 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       title: const Text('File Vault'),
+      scrolledUnderElevation: 0.0,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0.0,
       actions: [
         // Open vault
         IconButton(
