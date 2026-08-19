@@ -7,3 +7,4 @@ export 'confirmation_dialogs.dart';
 export 'vault_dialogs.dart';
 export 'progress_dialogs.dart';
 export 'backup_dialog.dart';
+export 'app_settings_dialog.dart';

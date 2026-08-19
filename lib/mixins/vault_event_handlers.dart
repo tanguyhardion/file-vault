@@ -146,4 +146,16 @@ mixin VaultEventHandlers<T extends StatefulWidget> on State<T> {
       }
     }
   }
+
+  Future<void> onAppSettings() async {
+    try {
+      await controller.showAppSettings(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update settings: $e')),
+        );
+      }
+    }
+  }
 }

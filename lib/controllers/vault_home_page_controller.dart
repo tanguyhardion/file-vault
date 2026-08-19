@@ -1,19 +1,22 @@
-import 'package:flutter/material.dart';
-import 'package:file_selector/file_selector.dart';
+import 'dart:async';
+import 'dart:io';
+
 import 'package:archive/archive_io.dart';
+import 'package:file_selector/file_selector.dart';
+import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/vault_models.dart';
-import '../services/recent_vaults_service.dart';
+import '../services/app_settings_service.dart';
 import '../services/backup_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/content_cache.dart';
+import '../services/recent_vaults_service.dart';
 import '../services/vault_service.dart';
 import '../widgets/widgets.dart';
-import 'vault_controller.dart';
 import 'file_operations_controller.dart';
 import 'search_controller.dart' as vault_search;
-import '../services/content_cache.dart';
-import 'dart:io';
+import 'vault_controller.dart';
 
 class VaultHomePageController extends ChangeNotifier {
   final VaultController vaultController = VaultController();
@@ -23,26 +26,79 @@ class VaultHomePageController extends ChangeNotifier {
   final TextEditingController editorController = TextEditingController();
   List<String> _recentVaults = [];
   int? _hoveredIndex;
+  int _inactivityLockMinutes = AppSettingsService.defaultInactivityLockMinutes;
+  Timer? _inactivityTimer;
 
   VaultHomePageController() {
     fileOperationsController = FileOperationsController(vaultController);
     searchController = vault_search.SearchController(vaultController);
 
     // Listen to controllers for updates
-    vaultController.addListener(notifyListeners);
+    vaultController.addListener(_onVaultStateChanged);
     fileOperationsController.addListener(notifyListeners);
     searchController.addListener(notifyListeners);
 
     _loadRecent();
+    _loadSettings();
   }
 
   @override
   void dispose() {
+    _inactivityTimer?.cancel();
     editorController.dispose();
+    vaultController.removeListener(_onVaultStateChanged);
     vaultController.dispose();
     fileOperationsController.dispose();
     searchController.dispose();
     super.dispose();
+  }
+
+  int get inactivityLockMinutes => _inactivityLockMinutes;
+
+  void _onVaultStateChanged() {
+    if (vaultController.isVaultOpen) {
+      resetInactivityTimer();
+    } else {
+      _inactivityTimer?.cancel();
+      _inactivityTimer = null;
+    }
+    notifyListeners();
+  }
+
+  Future<void> _loadSettings() async {
+    _inactivityLockMinutes =
+        await AppSettingsService.getInactivityLockMinutes();
+    resetInactivityTimer();
+    notifyListeners();
+  }
+
+  void resetInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = null;
+    if (!vaultController.isVaultOpen || _inactivityLockMinutes <= 0) {
+      return;
+    }
+    _inactivityTimer = Timer(
+      Duration(minutes: _inactivityLockMinutes),
+      lockVaultDueToInactivity,
+    );
+  }
+
+  void lockVaultDueToInactivity() {
+    if (!vaultController.isVaultOpen) return;
+    closeVault();
+  }
+
+  Future<void> showAppSettings(BuildContext context) async {
+    final result = await showAppSettingsDialog(
+      context,
+      currentMinutes: _inactivityLockMinutes,
+    );
+    if (result == null) return;
+    await AppSettingsService.setInactivityLockMinutes(result);
+    _inactivityLockMinutes = result;
+    resetInactivityTimer();
+    notifyListeners();
   }
 
   List<String> get recentVaults => _recentVaults;
@@ -222,6 +278,7 @@ class VaultHomePageController extends ChangeNotifier {
       searchController.clearSearch();
       editorController.clear();
       await _loadRecent();
+      resetInactivityTimer();
     }
   }
 
@@ -297,6 +354,7 @@ class VaultHomePageController extends ChangeNotifier {
     fileOperationsController.closeFile();
     searchController.clearSearch();
     editorController.clear();
+    resetInactivityTimer();
     await _loadRecent();
   }
 

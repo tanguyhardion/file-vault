@@ -9,6 +9,7 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onCreateVault;
   final VoidCallback onBackupVault;
   final VoidCallback onAutoBackupSettings;
+  final VoidCallback onAppSettings;
 
   const VaultAppBar({
     super.key,
@@ -18,6 +19,7 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onCreateVault,
     required this.onBackupVault,
     required this.onAutoBackupSettings,
+    required this.onAppSettings,
   });
 
   @override
@@ -79,6 +81,11 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
             onPressed: controller.closeVault,
           ),
         ],
+        IconButton(
+          tooltip: 'Settings (Ctrl+,)',
+          icon: const Icon(Icons.settings_outlined),
+          onPressed: onAppSettings,
+        ),
         const SizedBox(width: 8),
       ],
     );

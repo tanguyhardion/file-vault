@@ -57,6 +57,8 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
         ): const AutoBackupSettingsIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyW):
             const CloseVaultIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.comma):
+            const AppSettingsIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -84,24 +86,38 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
           CloseVaultIntent: CallbackAction<CloseVaultIntent>(
             onInvoke: (intent) => _controller.closeVault(),
           ),
+          AppSettingsIntent: CallbackAction<AppSettingsIntent>(
+            onInvoke: (intent) => onAppSettings(),
+          ),
         },
         child: Focus(
           autofocus: true,
-          child: Scaffold(
-            appBar: VaultAppBar(
-              controller: _controller,
-              onOpenVault: onOpenVault,
-              onShowRecentVaults: onShowRecentVaults,
-              onCreateVault: onCreateVault,
-              onBackupVault: onBackupVault,
-              onAutoBackupSettings: onAutoBackupSettings,
-            ),
-            body: NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                // Absorb all scroll notifications to prevent them from affecting the AppBar
-                return true;
-              },
-              child: _buildBody(),
+          onKeyEvent: (node, event) {
+            _controller.resetInactivityTimer();
+            return KeyEventResult.ignored;
+          },
+          child: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (_) => _controller.resetInactivityTimer(),
+            onPointerMove: (_) => _controller.resetInactivityTimer(),
+            onPointerSignal: (_) => _controller.resetInactivityTimer(),
+            child: Scaffold(
+              appBar: VaultAppBar(
+                controller: _controller,
+                onOpenVault: onOpenVault,
+                onShowRecentVaults: onShowRecentVaults,
+                onCreateVault: onCreateVault,
+                onBackupVault: onBackupVault,
+                onAutoBackupSettings: onAutoBackupSettings,
+                onAppSettings: onAppSettings,
+              ),
+              body: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  // Absorb all scroll notifications to prevent them from affecting the AppBar
+                  return true;
+                },
+                child: _buildBody(),
+              ),
             ),
           ),
         ),

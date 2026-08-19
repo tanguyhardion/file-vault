@@ -27,3 +27,7 @@ class AutoBackupSettingsIntent extends Intent {
 class CloseVaultIntent extends Intent {
   const CloseVaultIntent();
 }
+
+class AppSettingsIntent extends Intent {
+  const AppSettingsIntent();
+}
