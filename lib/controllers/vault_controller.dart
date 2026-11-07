@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 import '../models/vault_models.dart';
 import '../services/vault_service.dart';
 import '../services/recent_vaults_service.dart';
 import '../services/crypto_service.dart';
+import '../services/vault_marker.dart';
 
 class VaultController extends ChangeNotifier {
   // Allows creating only the marker file, without setting password or files
@@ -34,7 +34,7 @@ class VaultController extends ChangeNotifier {
     notifyListeners();
   }
 
-  static const String vaultMarkerFile = '.vault_marker';
+  static const String vaultMarkerFile = VaultMarker.fileName;
 
   Future<bool> checkVaultMarker(String dir) async {
     final marker = File('$dir/$vaultMarkerFile');
@@ -166,21 +166,8 @@ class VaultController extends ChangeNotifier {
       // Read marker file
       final marker = File('$vaultDir/$vaultMarkerFile');
       if (!await marker.exists()) return null;
-      final contents = await marker.readAsString();
-      final saltLine = contents
-          .split('\n')
-          .firstWhere((l) => l.startsWith('salt: '), orElse: () => '');
-      final hashLine = contents
-          .split('\n')
-          .firstWhere((l) => l.startsWith('password_hash: '), orElse: () => '');
-      if (saltLine.isEmpty || hashLine.isEmpty) return null;
-      final salt = base64Decode(saltLine.substring(6).trim());
-      final storedHash = base64Decode(hashLine.substring(15).trim());
-      final inputHash = await CryptoService.hashPassword(
-        password: password,
-        salt: salt,
-      );
-      if (!ListEquality().equals(storedHash, inputHash)) {
+      final parsed = VaultMarker.tryParse(await marker.readAsString());
+      if (parsed == null || !await parsed.verifyPassword(password)) {
         return null;
       }
       // Password is correct, return files

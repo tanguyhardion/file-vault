@@ -69,7 +69,7 @@ mixin VaultEventHandlers<T extends StatefulWidget> on State<T> {
 
   Future<void> onOpenFile(dynamic file) async {
     try {
-      await controller.openFile(file);
+      await controller.openFile(file, context: context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

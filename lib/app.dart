@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
+import 'mobile/mobile_root.dart';
 import 'screens/vault_home_page.dart';
 
 class FileVaultApp extends StatelessWidget {
@@ -19,7 +22,9 @@ class FileVaultApp extends StatelessWidget {
         colorSchemeSeed: Colors.teal,
         brightness: Brightness.dark,
       ),
-      home: const VaultHomePage(),
+      // Desktop works on local (OneDrive-synced) folders; Android talks to
+      // OneDrive directly.
+      home: Platform.isAndroid ? const MobileRoot() : const VaultHomePage(),
     );
   }
 }

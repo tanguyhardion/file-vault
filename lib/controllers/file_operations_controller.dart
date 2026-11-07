@@ -10,6 +10,8 @@ import 'vault_controller.dart';
 class FileOperationsController extends ChangeNotifier {
   final VaultController _vaultController;
   DecryptedFileContent? _openedContent;
+  // On-disk state when the file was opened/saved; detects synced changes.
+  FileFingerprint? _openedFingerprint;
   bool _dirty = false;
   bool _loading = false;
 
@@ -40,6 +42,7 @@ class FileOperationsController extends ChangeNotifier {
       final cached = ContentCache.instance.getIfFresh(file.fullPath, fp);
       if (cached != null) {
         _openedContent = DecryptedFileContent(content: cached, source: file);
+        _openedFingerprint = fp;
         _dirty = false;
         setLoading(false);
         return;
@@ -58,6 +61,7 @@ class FileOperationsController extends ChangeNotifier {
       }
 
       _openedContent = DecryptedFileContent(content: text, source: file);
+      _openedFingerprint = fp;
       _dirty = false;
       setLoading(false);
 
@@ -94,6 +98,7 @@ class FileOperationsController extends ChangeNotifier {
       await _vaultController.refreshFiles();
 
       _openedContent = DecryptedFileContent(content: '', source: entry);
+      _openedFingerprint = await VaultService.getFingerprint(entry.fullPath);
       _dirty = false;
       setLoading(false);
 
@@ -104,13 +109,24 @@ class FileOperationsController extends ChangeNotifier {
     }
   }
 
-  Future<void> saveCurrentFile(String content) async {
+  /// Throws [FileChangedExternallyException] if the file changed on disk since
+  /// it was opened, unless [overwrite] is set.
+  Future<void> saveCurrentFile(String content, {bool overwrite = false}) async {
     final current = _openedContent;
     final password = _vaultController.vaultPassword;
     if (current == null || password == null) return;
 
     setLoading(true);
     try {
+      if (!overwrite && _openedFingerprint != null) {
+        final onDisk = await VaultService.getFingerprint(
+          current.source.fullPath,
+        );
+        if (onDisk != _openedFingerprint) {
+          throw FileChangedExternallyException();
+        }
+      }
+
       // Offload encryption to background isolate
       final encrypted = await CryptoWorker.encryptString(
         content: content,
@@ -131,6 +147,7 @@ class FileOperationsController extends ChangeNotifier {
 
       // Refresh cache with new fingerprint
       final fp = await VaultService.getFingerprint(current.source.fullPath);
+      _openedFingerprint = fp;
       ContentCache.instance.put(current.source.fullPath, content, fp);
     } catch (e) {
       setLoading(false);
@@ -178,6 +195,7 @@ class FileOperationsController extends ChangeNotifier {
 
       if (_openedContent?.source.fullPath == file.fullPath) {
         _openedContent = null;
+        _openedFingerprint = null;
         _dirty = false;
       }
 
@@ -190,6 +208,7 @@ class FileOperationsController extends ChangeNotifier {
 
   void closeFile() {
     _openedContent = null;
+    _openedFingerprint = null;
     _dirty = false;
     notifyListeners();
   }

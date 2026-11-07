@@ -153,3 +153,40 @@ class _AutoBackupSettingsDialogState extends State<_AutoBackupSettingsDialog> {
     );
   }
 }
+
+enum ExternalChangeChoice { cancel, reload, overwrite }
+
+/// Asks what to do when a file changed on disk (e.g. synced from another
+/// device) after it was opened here.
+Future<ExternalChangeChoice> showExternalChangeDialog(
+  BuildContext context, {
+  required String fileName,
+}) async {
+  final result = await showDialog<ExternalChangeChoice>(
+    context: context,
+    builder: (ctx) => DialogWrapper(
+      title: const Text('File changed elsewhere'),
+      content: Text(
+        '"$fileName" was modified outside this window (for example on another '
+        'device) after you opened it.\n\nReload to get the latest version '
+        '(your edits here are lost), or overwrite it with your version.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(ExternalChangeChoice.cancel),
+          child: const Text('Keep editing'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(ExternalChangeChoice.reload),
+          child: const Text('Reload'),
+        ),
+        FilledButton.tonal(
+          onPressed: () =>
+              Navigator.of(ctx).pop(ExternalChangeChoice.overwrite),
+          child: const Text('Overwrite'),
+        ),
+      ],
+    ),
+  );
+  return result ?? ExternalChangeChoice.cancel;
+}

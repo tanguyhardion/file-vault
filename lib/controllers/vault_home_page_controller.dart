@@ -396,13 +396,18 @@ class VaultHomePageController extends ChangeNotifier {
     }
   }
 
-  Future<void> openFile(VaultFileEntry file) async {
+  Future<void> openFile(VaultFileEntry file, {BuildContext? context}) async {
     if (fileOperationsController.dirty) {
-      await saveCurrentFile();
+      await saveCurrentFile(context: context);
+      // Unsaved edits remain (e.g. external-change dialog dismissed); stay.
+      if (fileOperationsController.dirty) return;
     }
 
     await fileOperationsController.openFile(file);
+    _showOpenedContent();
+  }
 
+  void _showOpenedContent() {
     final content = fileOperationsController.openedContent;
     if (content != null) {
       editorController.text = content.content;
@@ -424,8 +429,29 @@ class VaultHomePageController extends ChangeNotifier {
     searchController.triggerSearch();
   }
 
-  Future<void> saveCurrentFile() async {
-    await fileOperationsController.saveCurrentFile(editorController.text);
+  Future<void> saveCurrentFile({BuildContext? context}) async {
+    try {
+      await fileOperationsController.saveCurrentFile(editorController.text);
+    } on FileChangedExternallyException {
+      final source = fileOperationsController.openedContent?.source;
+      if (context == null || !context.mounted || source == null) rethrow;
+      final choice = await showExternalChangeDialog(
+        context,
+        fileName: source.fileName,
+      );
+      switch (choice) {
+        case ExternalChangeChoice.overwrite:
+          await fileOperationsController.saveCurrentFile(
+            editorController.text,
+            overwrite: true,
+          );
+        case ExternalChangeChoice.reload:
+          await fileOperationsController.openFile(source);
+          _showOpenedContent();
+        case ExternalChangeChoice.cancel:
+          break;
+      }
+    }
   }
 
   Future<void> renameFile(BuildContext context, VaultFileEntry file) async {
@@ -472,12 +498,12 @@ class VaultHomePageController extends ChangeNotifier {
     }
   }
 
-  void handleSaveShortcut() {
+  void handleSaveShortcut(BuildContext context) {
     if (vaultController.vaultPassword != null &&
         !loading &&
         fileOperationsController.openedContent != null &&
         fileOperationsController.dirty) {
-      saveCurrentFile();
+      saveCurrentFile(context: context);
     }
   }
 

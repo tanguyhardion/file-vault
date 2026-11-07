@@ -36,7 +36,7 @@ class VaultMainContent extends StatelessWidget {
       controller: controller.editorController,
       dirty: controller.fileOperationsController.dirty,
       loading: controller.loading,
-      onSave: controller.saveCurrentFile,
+      onSave: () => controller.saveCurrentFile(context: context),
       onChanged: (v) => controller.onContentChanged(),
     );
   }

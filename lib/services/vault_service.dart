@@ -50,7 +50,7 @@ class VaultService {
     required String fileNameWithoutExt,
     required Uint8List encryptedBytes,
   }) async {
-    final safeName = _sanitizeFileName(fileNameWithoutExt);
+    final safeName = sanitizeFileName(fileNameWithoutExt);
     final targetPath = p.join(dirPath, '$safeName$fvaExtension');
     final file = File(targetPath);
     await file.writeAsBytes(encryptedBytes, flush: true);
@@ -80,7 +80,7 @@ class VaultService {
       throw FileSystemException('File does not exist', fullPath);
     }
     final dirPath = p.dirname(fullPath);
-    final safeName = _sanitizeFileName(newFileNameWithoutExt);
+    final safeName = sanitizeFileName(newFileNameWithoutExt);
     final newPath = p.join(dirPath, '$safeName$fvaExtension');
     if (p.equals(fullPath, newPath)) {
       // No change in resulting path; return current entry.
@@ -111,7 +111,8 @@ class VaultService {
     }
   }
 
-  static String _sanitizeFileName(String input) {
+  /// Makes a file name safe for Windows/OneDrive (no extension handling).
+  static String sanitizeFileName(String input) {
     var name = input.trim();
     if (name.isEmpty) name = 'untitled';
     // Basic invalid chars for Windows and others
@@ -123,6 +124,12 @@ class VaultService {
     name = name.replaceAll(RegExp(r'[ .]+$'), '');
     return name.isEmpty ? 'untitled' : name;
   }
+}
+
+/// The file on disk no longer matches the version that was opened.
+class FileChangedExternallyException implements Exception {
+  @override
+  String toString() => 'The file was changed outside this app.';
 }
 
 class FileFingerprint {

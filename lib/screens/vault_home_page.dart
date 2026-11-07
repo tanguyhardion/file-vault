@@ -64,7 +64,7 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
         actions: <Type, Action<Intent>>{
           SaveIntent: CallbackAction<SaveIntent>(
             onInvoke: (intent) {
-              _controller.handleSaveShortcut();
+              _controller.handleSaveShortcut(context);
               return null;
             },
           ),
