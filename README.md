@@ -1,17 +1,15 @@
 # File Vault
 
-File Vault does not store your data. Everything is kept locally on your device and is safely encrypted.
-
-A simple Flutter app for securely managing and encrypting files on Windows and Android. On Windows, vaults are local folders (which you can keep in a OneDrive-synced folder); the Android app opens the same vaults from a folder on the phone kept in sync with Syncthing. Files are only ever stored or uploaded in encrypted form.
+A simple Flutter app for securely managing encrypted notes on Windows and Android. Vaults are stored in a database (Supabase) so the same vaults are available on every device you sign in on. Files are encrypted on the device before they are uploaded: the database only ever holds ciphertext.
 
 ## Features
 
-- Secure local file storage: Everything stays on your device, with strong AES-GCM encryption (.fva format) and password-protected vaults
-- Fast search, file organization, and recent vaults
-- Encrypted backup and restore support
+- Vaults synced between Windows and Android through your account, with strong AES-GCM encryption (.fva format) and password-protected vaults
+- Fast search, file organization
+- Encrypted ZIP backups (e.g. into your OneDrive folder), automatic on open/close if enabled
+- Import an existing vault folder or a backup ZIP
 - File operations: create, rename, delete, open, save
 - Responsive, user-friendly interface (crypto runs in background isolates)
-- Windows and Android support (vaults synced between devices with Syncthing)
 - Edit conflict detection: saving never silently overwrites a change made on another device
 
 ### Encryption & Security
@@ -22,11 +20,19 @@ File Vault is designed to keep your files safe and private. Here’s how it work
 - **Password-based key derivation**: Your password is never stored. Instead, a strong encryption key is derived using PBKDF2-HMAC-SHA256 (150,000 iterations, 16-byte salt).
 - **Unique salt and nonce per file**: Each file uses a unique salt and nonce, making brute-force and rainbow table attacks useless.
 - **Authenticated encryption**: Every file includes a 16-byte GCM tag (MAC) to ensure integrity and detect tampering.
-- **On-device crypto**: All encryption and decryption happens on your device. Only encrypted `.fva` files and the `.vault_marker` (salt + password hash) are ever synced or uploaded; neither Syncthing nor OneDrive ever receives your password or decrypted content.
+- **On-device crypto**: All encryption and decryption happens on your device. Only encrypted `.fva` files and each vault's marker (salt + PBKDF2 password hash) are ever uploaded; the database never receives your vault password or decrypted content.
+- **Two separate passwords**: your account (email + password) only lets a device read and write your encrypted rows (enforced by row-level security). Each vault still has its own password, which never leaves the device.
 - **Encrypted backups**: Backups are always encrypted. You can safely store them anywhere, including cloud folders (e.g., OneDrive, iCloud).
-- **Zero knowledge**: The app never knows or stores your password or unencrypted data.
+- **Zero knowledge**: The app never knows or stores your vault password or unencrypted data. As with any cloud copy, someone with access to the database could try to guess a vault password offline against its hash, so use a strong one.
 
 If you lose your password, your files cannot be recovered—no backdoors, no tricks. Your secrets stay yours.
+
+## Database setup (once)
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. Apply the schema in `supabase/migrations/` (SQL editor, or `supabase db push`). It creates the `vaults` and `vault_files` tables with row-level security.
+3. In **Authentication → Providers**, keep **Email** enabled. Turn off "Confirm email" if you don't want to confirm your address before the first sign-in.
+4. Note the project URL and the publishable (anon) key from **Project Settings → API**. The key is meant to ship in apps; row-level security restricts every account to its own rows.
 
 ## Getting Started
 
@@ -42,55 +48,42 @@ If you lose your password, your files cannot be recovered—no backdoors, no tri
    ```
 4. Build and run for Windows:
    ```sh
-   flutter run -d windows
+   flutter run -d windows --dart-define=SUPABASE_URL=https://<project>.supabase.co --dart-define=SUPABASE_KEY=<publishable-key>
    ```
+
+On first launch, create an account (or sign in), then create a vault, or import an existing vault folder (the one containing `.vault_marker`) or a backup ZIP with **Import** (Ctrl+I). Imported vaults keep their password.
+
+### Backups
+
+**Backup** (Ctrl+B) downloads the vault's encrypted files and writes them, with the vault marker, as a ZIP to the folder you choose, for example your OneDrive folder. With **auto backup** on, the ZIP in that folder is replaced each time the vault is opened or closed on this PC. A backup ZIP can be imported again.
 
 ## Android app
 
-The Android app opens a vault from a folder on the phone. It decrypts files in memory and writes back only re-encrypted bytes. Decrypted text is never written to disk, and screenshots and the recent-apps preview are blocked.
-
-To get the same vaults on the PC and the phone, sync the vault folder with [Syncthing](https://syncthing.net/). Syncthing copies files directly between your devices, with no cloud account. The vault can stay in your OneDrive folder on the PC, so OneDrive still backs it up.
-
-### Set up syncing (once)
-
-1. Install Syncthing on Windows and the Syncthing app on the phone (Syncthing-Fork on Android).
-2. Pair the two devices (scan the device ID QR code).
-3. On the PC, share the vault folder (the one containing `.vault_marker`) with the phone, and accept it on the phone into a folder in the phone's storage, e.g. `/storage/emulated/0/Vaults/Personal`.
+The Android app shows the vaults of the account you sign in with. It decrypts files in memory and uploads only re-encrypted bytes. Decrypted text is never written to disk, and screenshots and the recent-apps preview are blocked.
 
 ### Build and install
 
 ```sh
-flutter build apk --release
+flutter build apk --release --dart-define=SUPABASE_URL=https://<project>.supabase.co --dart-define=SUPABASE_KEY=<publishable-key>
 ```
 
 Copy `build/app/outputs/flutter-apk/app-release.apk` to your phone and open it (allow installing from unknown sources), or with the phone connected over USB run `flutter install`.
-
-In the app, tap **Add vault**, allow **All files access** when asked, browse to the synced vault folder, and enter the vault password.
 
 Every vault password attempt also requires the phone's screen lock (fingerprint, face, PIN, pattern or password) *before* the password is checked, so passwords can't be guessed on the phone without it. Vaults can't be opened on a phone with no screen lock.
 
 ### Editing on several devices
 
-- Every file is read fresh from the folder when opened.
-- Saving checks that the file wasn't changed (e.g. synced from the PC) since you opened it. If it was, you choose **Reload** or **Overwrite**. The desktop app does the same check.
+- Every file is read fresh from the database when opened.
+- Each file has a version number that the database bumps on every change. Saving checks that the file wasn't changed on another device since you opened it. If it was, you choose **Reload** or **Overwrite**.
 - Pending edits are saved when the app goes to the background or auto-locks.
-- Changes travel only while both devices are online. If both edit the same file before syncing, Syncthing keeps the other version as a `*.sync-conflict-*.fva` file in the vault, so nothing is lost.
-
-### Optional: open vaults directly from OneDrive
-
-The app can also talk to OneDrive itself through Microsoft Graph, without Syncthing. This needs an app registration in [Microsoft Entra](https://entra.microsoft.com) (App registrations → New registration, any organizational directory + personal accounts, redirect URI type **Public client/native**, value `com.tanguyhardion.filevault://auth`, delegated Graph permissions `Files.ReadWrite` and `offline_access`). Then build with:
-
-```sh
-flutter build apk --release --dart-define=ONEDRIVE_CLIENT_ID=<application-id>
-```
-
-**Add vault** then offers **OneDrive** next to **Folder on this phone**. OneDrive sees file names, sizes and dates, never passwords or decrypted content.
 
 ## Project Structure
 
 ```
-lib/           # App code
-lib/mobile/    # Android UI, vault storage (local folder, optional OneDrive)
+lib/           # App code (desktop UI, shared services)
+lib/services/cloud/  # Supabase auth, REST client, vault storage
+lib/mobile/    # Android UI
+supabase/      # Database schema (migrations)
 android/       # Android build files
 windows/       # Windows build files
 build/         # Generated assets

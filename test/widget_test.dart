@@ -1,19 +1,38 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:file_vault/app.dart';
+import 'package:file_vault/screens/sign_in_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'fake_supabase.dart';
+
 void main() {
-  testWidgets('FileVaultApp renders without crashing', (
+  testWidgets('FileVaultApp without a database explains how to build', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const FileVaultApp());
-    // Basic smoke check: app title present
-    expect(find.text('File Vault'), findsWidgets);
+    expect(find.textContaining('SUPABASE_URL'), findsOneWidget);
+  });
+
+  testWidgets('sign-in screen signs in', (WidgetTester tester) async {
+    final server = FakeSupabase()..users['me@example.com'] = 'account-pw';
+    final auth = server.auth();
+    await tester.runAsync(auth.init);
+    await tester.pumpWidget(MaterialApp(home: SignInScreen(auth: auth)));
+
+    await tester.enterText(find.byType(TextField).at(0), 'me@example.com');
+    await tester.enterText(find.byType(TextField).at(1), 'wrong');
+    await tester.runAsync(() async {
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+    expect(find.text('Invalid login credentials'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).at(1), 'account-pw');
+    await tester.runAsync(() async {
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    expect(auth.isSignedIn, isTrue);
   });
 }

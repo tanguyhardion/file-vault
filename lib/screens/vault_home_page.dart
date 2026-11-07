@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../controllers/vault_home_page_controller.dart';
+import '../services/cloud/cloud_auth.dart';
+import '../services/cloud/cloud_vaults.dart';
 import '../mixins/vault_event_handlers.dart';
 import '../shortcuts/vault_intents.dart';
 import '../widgets/vault/vault_app_bar.dart';
@@ -9,7 +11,14 @@ import '../widgets/vault/vault_left_panel.dart';
 import '../widgets/vault/vault_main_content.dart';
 
 class VaultHomePage extends StatefulWidget {
-  const VaultHomePage({super.key});
+  final CloudAuth auth;
+  final CloudVaultRepository repository;
+
+  const VaultHomePage({
+    super.key,
+    required this.auth,
+    required this.repository,
+  });
 
   @override
   State<VaultHomePage> createState() => _VaultHomePageState();
@@ -24,7 +33,10 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
   @override
   void initState() {
     super.initState();
-    _controller = VaultHomePageController();
+    _controller = VaultHomePageController(
+      auth: widget.auth,
+      repository: widget.repository,
+    );
     _controller.addListener(() {
       if (mounted) setState(() {});
     });
@@ -44,8 +56,8 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
             const SaveIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO):
             const OpenVaultIntent(),
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyR):
-            const ShowRecentVaultsIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyI):
+            const ImportVaultIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN):
             const CreateVaultIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB):
@@ -71,8 +83,8 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
           OpenVaultIntent: CallbackAction<OpenVaultIntent>(
             onInvoke: (intent) => onOpenVault(),
           ),
-          ShowRecentVaultsIntent: CallbackAction<ShowRecentVaultsIntent>(
-            onInvoke: (intent) => onShowRecentVaults(),
+          ImportVaultIntent: CallbackAction<ImportVaultIntent>(
+            onInvoke: (intent) => onImportVault(),
           ),
           CreateVaultIntent: CallbackAction<CreateVaultIntent>(
             onInvoke: (intent) => onCreateVault(),
@@ -105,7 +117,8 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
               appBar: VaultAppBar(
                 controller: _controller,
                 onOpenVault: onOpenVault,
-                onShowRecentVaults: onShowRecentVaults,
+                onImportVault: onImportVault,
+                onSignOut: onSignOut,
                 onCreateVault: onCreateVault,
                 onBackupVault: onBackupVault,
                 onAutoBackupSettings: onAutoBackupSettings,
@@ -131,7 +144,6 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
         // Left pane: file list
         VaultLeftPanel(
           controller: _controller,
-          onOpenVaultInExplorer: onOpenVaultInExplorer,
           onCreateNewFile: onCreateNewFile,
           onOpenFile: onOpenFile,
           onRename: onRenameFile,
@@ -145,8 +157,8 @@ class _VaultHomePageState extends State<VaultHomePage> with VaultEventHandlers {
         Expanded(
           child: VaultMainContent(
             controller: _controller,
-            onOpenRecent: onOpenRecent,
-            onShowAllRecent: onShowRecentVaults,
+            onOpenVault: onOpenVaultFromList,
+            onShowAllVaults: onOpenVault,
           ),
         ),
       ],

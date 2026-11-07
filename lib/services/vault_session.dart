@@ -1,22 +1,15 @@
-import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 
-import '../services/crypto_worker.dart';
-import '../services/vault_marker.dart';
-import '../services/vault_service.dart';
-import 'saved_vaults_store.dart';
+import 'cloud/cloud_vaults.dart';
+import 'crypto_worker.dart';
 import 'storage/vault_storage.dart';
+import 'vault_service.dart';
 
 class WrongPasswordException implements Exception {
   @override
   String toString() => 'Incorrect password.';
-}
-
-class NotAVaultException implements Exception {
-  @override
-  String toString() => 'This folder is not a vault (missing .vault_marker).';
 }
 
 /// A decrypted file held in memory, plus the version it was read from.
@@ -27,39 +20,40 @@ class OpenedVaultFile {
   const OpenedVaultFile({required this.item, required this.content});
 }
 
-/// An unlocked vault.
+/// An unlocked vault, shared by the desktop and Android UIs.
 ///
 /// Encryption and decryption happen here, in memory. Only ciphertext is passed
 /// to the [VaultStorage], and plaintext is never written anywhere.
 class VaultSession extends ChangeNotifier {
   final VaultStorage _storage;
-  final SavedVault vault;
+  CloudVault _vault;
   String? _password;
   List<VaultItem> _files;
 
-  VaultSession._(this._storage, this.vault, this._password, this._files);
+  VaultSession(this._storage, this._vault, this._password, this._files);
 
+  CloudVault get vault => _vault;
   List<VaultItem> get files => _files;
   bool get isLocked => _password == null;
+  VaultStorage get storage => _storage;
 
   /// Verifies [password] against the vault marker and lists the files.
   static Future<VaultSession> unlock(
     VaultStorage storage,
-    SavedVault vault,
+    CloudVault vault,
     String password,
   ) async {
-    final items = await storage.listFiles();
-    final markerItem = items.where((c) => c.name == VaultMarker.fileName);
-    if (markerItem.isEmpty) throw NotAVaultException();
-
-    final markerBytes = await storage.read(markerItem.first);
-    final marker = VaultMarker.tryParse(utf8.decode(markerBytes));
-    if (marker == null) throw NotAVaultException();
+    final marker = vault.marker;
     // PBKDF2 is slow on phones; keep it off the UI isolate.
     final ok = await Isolate.run(() => marker.verifyPassword(password));
     if (!ok) throw WrongPasswordException();
+    final items = await storage.listFiles();
+    return VaultSession(storage, vault, password, _vaultFiles(items));
+  }
 
-    return VaultSession._(storage, vault, password, _vaultFiles(items));
+  void updateVault(CloudVault vault) {
+    _vault = vault;
+    notifyListeners();
   }
 
   Future<void> refresh() async {
@@ -69,16 +63,21 @@ class VaultSession extends ChangeNotifier {
 
   /// Always reads the latest version from storage.
   Future<OpenedVaultFile> openFile(VaultItem file) async {
-    final password = _requirePassword();
     // Metadata first: if the file changes between these two calls, the older
     // version makes the next save fail with a conflict instead of losing data.
     final item = await _storage.stat(file);
-    final bytes = await _storage.read(item);
-    final content = bytes.isEmpty
-        ? ''
-        : await CryptoWorker.decryptToString(data: bytes, password: password);
+    final content = await decrypt(item);
     _replaceFile(item);
     return OpenedVaultFile(item: item, content: content);
+  }
+
+  /// Downloads and decrypts [item] as listed, without checking its version.
+  Future<String> decrypt(VaultItem item) async {
+    final password = _requirePassword();
+    final bytes = await _storage.read(item);
+    return bytes.isEmpty
+        ? ''
+        : CryptoWorker.decryptToString(data: bytes, password: password);
   }
 
   /// Encrypts and writes [content]. Unless [overwrite] is set, fails with
@@ -109,7 +108,10 @@ class VaultSession extends ChangeNotifier {
       content: '',
       password: password,
     );
-    final item = await _storage.create(_fileName(nameWithoutExt), encrypted);
+    final item = await _storage.create(
+      VaultService.fileNameFor(nameWithoutExt),
+      encrypted,
+    );
     _files = _sorted([..._files, item]);
     notifyListeners();
     return OpenedVaultFile(item: item, content: '');
@@ -117,9 +119,11 @@ class VaultSession extends ChangeNotifier {
 
   Future<VaultItem> renameFile(VaultItem file, String newNameWithoutExt) async {
     _requirePassword();
-    final item = await _storage.rename(file, _fileName(newNameWithoutExt));
-    _files = _sorted([..._files.where((f) => f.id != file.id), item]);
-    notifyListeners();
+    final item = await _storage.rename(
+      file,
+      VaultService.fileNameFor(newNameWithoutExt),
+    );
+    _replaceFile(item);
     return item;
   }
 
@@ -148,13 +152,8 @@ class VaultSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  static String _fileName(String nameWithoutExt) =>
-      '${VaultService.sanitizeFileName(nameWithoutExt)}${VaultService.fvaExtension}';
-
   static List<VaultItem> _vaultFiles(List<VaultItem> items) => _sorted(
-    items
-        .where((c) => c.name.toLowerCase().endsWith(VaultService.fvaExtension))
-        .toList(),
+    items.where((c) => VaultService.isVaultFileName(c.name)).toList(),
   );
 
   static List<VaultItem> _sorted(List<VaultItem> files) =>

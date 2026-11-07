@@ -3,15 +3,17 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import '../services/app_settings_service.dart';
-import 'onedrive/onedrive_auth.dart';
-import 'onedrive/onedrive_client.dart';
-import 'vault_session.dart';
+import '../services/cloud/cloud_auth.dart';
+import '../services/cloud/cloud_vaults.dart';
+import '../services/vault_session.dart';
 
-/// App-wide state for the Android app: OneDrive sign-in, the unlocked vault,
-/// and inactivity locking (same setting as the desktop app).
+/// App-wide state for the Android app: the account, the unlocked vault, and
+/// inactivity locking (same setting as the desktop app).
 class MobileAppState extends ChangeNotifier with WidgetsBindingObserver {
-  final OneDriveAuth auth = OneDriveAuth();
-  late final OneDriveClient client = OneDriveClient(auth);
+  final CloudAuth auth;
+  final CloudVaultRepository repository;
+
+  MobileAppState({required this.auth, required this.repository});
 
   VaultSession? _session;
   int _lockMinutes = AppSettingsService.defaultInactivityLockMinutes;
@@ -27,7 +29,6 @@ class MobileAppState extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> init() async {
     WidgetsBinding.instance.addObserver(this);
     _lockMinutes = await AppSettingsService.getInactivityLockMinutes();
-    await auth.init();
   }
 
   @override
@@ -35,7 +36,6 @@ class MobileAppState extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _inactivityTimer?.cancel();
     _session?.lock();
-    auth.dispose();
     super.dispose();
   }
 

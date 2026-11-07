@@ -23,13 +23,6 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // OAuth redirect for OneDrive sign-in (flutter_appauth). URI schemes
-        // can't contain underscores, so this differs from the application ID.
-        manifestPlaceholders.putAll(
-            mapOf(
-                "appAuthRedirectScheme" to "com.tanguyhardion.filevault"
-            )
-        )
     }
 
     buildTypes {

@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-/// A file inside a vault folder, wherever the folder lives.
+/// A file inside a vault.
 class VaultItem {
-  /// Backend-specific handle (a OneDrive item ID or a full local path).
+  /// Backend-specific handle (a database row ID).
   final String id;
   final String name;
   final int size;
@@ -20,10 +20,19 @@ class VaultItem {
   });
 }
 
-/// The vault folder itself no longer exists.
-class VaultFolderMissingException implements Exception {
+/// The file was deleted (e.g. on another device).
+class FileMissingException implements Exception {
+  final String name;
+  const FileMissingException(this.name);
+
   @override
-  String toString() => 'The vault folder no longer exists.';
+  String toString() => '"$name" no longer exists.';
+}
+
+/// The stored file no longer matches the version that was opened.
+class FileChangedExternallyException implements Exception {
+  @override
+  String toString() => 'The file was changed on another device.';
 }
 
 /// A file with the requested name already exists.
@@ -38,7 +47,7 @@ class NameConflictException implements Exception {
 /// Where a vault's (encrypted) files are stored. Implementations only ever
 /// receive and return ciphertext.
 abstract class VaultStorage {
-  /// Files directly inside the vault folder (no subfolders).
+  /// All files of the vault.
   Future<List<VaultItem>> listFiles();
 
   /// Current metadata of [item].
@@ -47,7 +56,7 @@ abstract class VaultStorage {
   Future<Uint8List> read(VaultItem item);
 
   /// Replaces the content of [item]. If [ifVersion] is given and the file
-  /// changed since then, throws `FileChangedExternallyException`.
+  /// changed since then, throws [FileChangedExternallyException].
   Future<VaultItem> write(VaultItem item, Uint8List bytes, {String? ifVersion});
 
   /// Creates [name]; throws [NameConflictException] if it exists.

@@ -5,7 +5,8 @@ import '../../controllers/vault_home_page_controller.dart';
 class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VaultHomePageController controller;
   final VoidCallback onOpenVault;
-  final VoidCallback onShowRecentVaults;
+  final VoidCallback onImportVault;
+  final VoidCallback onSignOut;
   final VoidCallback onCreateVault;
   final VoidCallback onBackupVault;
   final VoidCallback onAutoBackupSettings;
@@ -15,7 +16,8 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.controller,
     required this.onOpenVault,
-    required this.onShowRecentVaults,
+    required this.onImportVault,
+    required this.onSignOut,
     required this.onCreateVault,
     required this.onBackupVault,
     required this.onAutoBackupSettings,
@@ -36,20 +38,20 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.folder_open),
           onPressed: onOpenVault,
         ),
-        // Open recent vaults
-        IconButton(
-          tooltip: 'Open recent vaults (Ctrl+R)',
-          icon: const Icon(Icons.history),
-          onPressed: onShowRecentVaults,
-        ),
         // Create new vault
         IconButton(
           tooltip: 'Create new vault (Ctrl+N)',
           icon: const Icon(Icons.create_new_folder_outlined),
           onPressed: onCreateVault,
         ),
+        // Import a vault folder or backup
+        IconButton(
+          tooltip: 'Import vault folder or backup (Ctrl+I)',
+          icon: const Icon(Icons.upload_file),
+          onPressed: onImportVault,
+        ),
         // Backup buttons (only shown when vault is open)
-        if (controller.vaultController.vaultDir != null) ...[
+        if (controller.vaultController.isVaultOpen) ...[
           // Separator
           Container(
             width: 1,
@@ -85,6 +87,20 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
           tooltip: 'Settings (Ctrl+,)',
           icon: const Icon(Icons.settings_outlined),
           onPressed: onAppSettings,
+        ),
+        PopupMenuButton<String>(
+          tooltip: 'Account',
+          icon: const Icon(Icons.account_circle_outlined),
+          onSelected: (v) {
+            if (v == 'signout') onSignOut();
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem(
+              enabled: false,
+              child: Text(controller.accountEmail ?? 'Signed in'),
+            ),
+            const PopupMenuItem(value: 'signout', child: Text('Sign out')),
+          ],
         ),
         const SizedBox(width: 8),
       ],

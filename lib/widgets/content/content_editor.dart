@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../models/vault_models.dart';
+import '../../services/vault_session.dart';
 
 class ContentEditor extends StatelessWidget {
-  final DecryptedFileContent content;
+  final OpenedVaultFile content;
   final TextEditingController controller;
   final bool dirty;
   final bool loading;
@@ -30,7 +30,7 @@ class ContentEditor extends StatelessWidget {
           Row(
             children: [
               Text(
-                content.source.fileName,
+                content.item.name,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               if (dirty) ...[

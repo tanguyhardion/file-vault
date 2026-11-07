@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../controllers/vault_home_page_controller.dart';
+import '../services/cloud/cloud_vaults.dart';
 
 mixin VaultEventHandlers<T extends StatefulWidget> on State<T> {
   VaultHomePageController get controller;
@@ -17,9 +18,9 @@ mixin VaultEventHandlers<T extends StatefulWidget> on State<T> {
     }
   }
 
-  Future<void> onOpenRecent(String dir) async {
+  Future<void> onOpenVaultFromList(CloudVault vault) async {
     try {
-      await controller.openVaultAt(dir, context: context);
+      await controller.openVaultAt(vault, context: context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -29,16 +30,26 @@ mixin VaultEventHandlers<T extends StatefulWidget> on State<T> {
     }
   }
 
-  Future<void> onOpenVaultInExplorer() async {
-    final dir = controller.vaultController.vaultDir;
-    if (dir == null) return;
+  Future<void> onImportVault() async {
     try {
-      await controller.openFolderInExplorer(dir);
+      await controller.importVault(context: context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to open folder: $e')));
+        ).showSnackBar(SnackBar(content: Text('Failed to import: $e')));
+      }
+    }
+  }
+
+  Future<void> onSignOut() async {
+    try {
+      await controller.signOut(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -46,18 +57,6 @@ mixin VaultEventHandlers<T extends StatefulWidget> on State<T> {
   Future<void> onCreateVault() async {
     try {
       await controller.createVault(context: context);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-    }
-  }
-
-  Future<void> onShowRecentVaults() async {
-    try {
-      await controller.showRecentVaults(context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

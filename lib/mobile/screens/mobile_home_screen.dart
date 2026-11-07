@@ -1,17 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../services/cloud/cloud_vaults.dart';
+import '../../services/vault_session.dart';
 import '../../widgets/widgets.dart';
 import '../device_auth.dart';
 import '../mobile_app_state.dart';
-import '../onedrive/onedrive_config.dart';
-import '../saved_vaults_store.dart';
-import '../storage/local_vault_storage.dart';
-import '../storage/onedrive_vault_storage.dart';
-import '../storage/vault_storage.dart';
-import '../storage_access.dart';
-import '../vault_session.dart';
-import 'local_folder_picker_screen.dart';
-import 'onedrive_folder_picker_screen.dart';
 import 'vault_files_screen.dart';
 
 class MobileHomeScreen extends StatefulWidget {
@@ -24,27 +17,16 @@ class MobileHomeScreen extends StatefulWidget {
 }
 
 class _MobileHomeScreenState extends State<MobileHomeScreen> {
-  List<SavedVault> _vaults = [];
+  List<CloudVault> _vaults = [];
   bool _initializing = true;
-  bool _busy = false;
+  Object? _loadError;
 
   MobileAppState get _app => widget.appState;
 
   @override
   void initState() {
     super.initState();
-    _app.auth.addListener(_onChanged);
     _init();
-  }
-
-  @override
-  void dispose() {
-    _app.auth.removeListener(_onChanged);
-    super.dispose();
-  }
-
-  void _onChanged() {
-    if (mounted) setState(() {});
   }
 
   Future<void> _init() async {
@@ -54,8 +36,17 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
   }
 
   Future<void> _loadVaults() async {
-    final vaults = await SavedVaultsStore.getAll();
-    if (mounted) setState(() => _vaults = vaults);
+    try {
+      final vaults = await _app.repository.list();
+      if (mounted) {
+        setState(() {
+          _vaults = vaults;
+          _loadError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadError = e);
+    }
   }
 
   void _showError(Object e) {
@@ -70,112 +61,44 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
     await _app.auth.signOut();
   }
 
-  /// Signs in to OneDrive if needed; returns whether the user is signed in.
-  Future<bool> _ensureSignedIn() async {
-    if (_app.auth.isSignedIn) return true;
-    setState(() => _busy = true);
+  Future<void> _createVault() async {
+    final name = await promptForName(
+      context,
+      title: 'New vault',
+      label: 'Vault name',
+    );
+    if (name == null || name.trim().isEmpty || !mounted) return;
+    final password = await promptForPasswordCreation(
+      context,
+      title: 'Set a password for this vault',
+    );
+    if (password == null || password.isEmpty || !mounted) return;
+
+    showLoadingDialog(context, message: 'Creating vault...');
+    CloudVault? vault;
+    Object? error;
     try {
-      return await _app.auth.signIn();
+      vault = await _app.repository.create(name.trim(), password);
     } catch (e) {
-      _showError(e);
-      return false;
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<bool> _ensureStorageAccess() async {
-    if (await StorageAccess.ensure()) return true;
-    if (mounted) {
-      await showErrorDialog(
-        context,
-        title: 'Storage Access Needed',
-        message:
-            'Allow "All files access" for File Vault so it can read and write '
-            'vault folders on this phone.',
-      );
-    }
-    return false;
-  }
-
-  Future<void> _addVault() async {
-    var location = VaultLocation.local;
-    if (OneDriveConfig.isConfigured) {
-      final picked = await showModalBottomSheet<VaultLocation>(
-        context: context,
-        builder: (ctx) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.phone_android),
-                title: const Text('Folder on this phone'),
-                onTap: () => Navigator.pop(ctx, VaultLocation.local),
-              ),
-              ListTile(
-                leading: const Icon(Icons.cloud_outlined),
-                title: const Text('OneDrive'),
-                onTap: () => Navigator.pop(ctx, VaultLocation.oneDrive),
-              ),
-            ],
-          ),
-        ),
-      );
-      if (picked == null) return;
-      location = picked;
+      error = e;
     }
     if (!mounted) return;
-
-    SavedVault? vault;
-    switch (location) {
-      case VaultLocation.local:
-        if (!await _ensureStorageAccess()) return;
-        final root = await StorageAccess.storageRoot;
-        if (!mounted) return;
-        vault = await Navigator.of(context).push<SavedVault>(
-          MaterialPageRoute(
-            builder: (_) => LocalFolderPickerScreen(rootPath: root),
-          ),
-        );
-      case VaultLocation.oneDrive:
-        if (!await _ensureSignedIn() || !mounted) return;
-        vault = await Navigator.of(context).push<SavedVault>(
-          MaterialPageRoute(
-            builder: (_) => OneDriveFolderPickerScreen(client: _app.client),
-          ),
-        );
+    Navigator.of(context).pop(); // loading dialog
+    if (error != null) {
+      _showError(error);
+      return;
     }
-    if (vault == null) return;
-    await SavedVaultsStore.add(vault);
     await _loadVaults();
-    if (mounted) await _openVault(vault);
+    final session = VaultSession(
+      _app.repository.storageFor(vault!),
+      vault,
+      password,
+      [],
+    );
+    await _enter(session);
   }
 
-  Future<void> _removeVault(SavedVault vault) async {
-    await SavedVaultsStore.remove(vault);
-    await _loadVaults();
-  }
-
-  /// Storage for [vault], after making sure it can be accessed.
-  Future<VaultStorage?> _storageFor(SavedVault vault) async {
-    switch (vault.location) {
-      case VaultLocation.local:
-        if (!await _ensureStorageAccess()) return null;
-        return LocalVaultStorage(vault.id);
-      case VaultLocation.oneDrive:
-        if (!OneDriveConfig.isConfigured) {
-          _showError('This build has no OneDrive client ID.');
-          return null;
-        }
-        if (!await _ensureSignedIn()) return null;
-        return OneDriveVaultStorage(_app.client, vault.id);
-    }
-  }
-
-  Future<void> _openVault(SavedVault vault) async {
-    final storage = await _storageFor(vault);
-    if (storage == null) return;
-
+  Future<void> _openVault(CloudVault vault) async {
     while (true) {
       if (!mounted) return;
       final password = await promptForPasswordWithVerification(
@@ -208,7 +131,11 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
       VaultSession? session;
       Object? error;
       try {
-        session = await VaultSession.unlock(storage, vault, password);
+        session = await VaultSession.unlock(
+          _app.repository.storageFor(vault),
+          vault,
+          password,
+        );
       } catch (e) {
         error = e;
       }
@@ -223,33 +150,23 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
         );
         continue;
       }
-      if (error is VaultFolderMissingException) {
-        await showErrorDialog(
-          context,
-          title: 'Vault Not Found',
-          message:
-              'This vault folder no longer exists. It will be removed from '
-              'the list.',
-        );
-        await _removeVault(vault);
-        return;
-      }
       if (error != null) {
         _showError(error);
         return;
       }
-
-      await SavedVaultsStore.add(vault);
-      await _loadVaults();
-      _app.startSession(session!);
-      if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => VaultFilesScreen(appState: _app, session: session!),
-        ),
-      );
+      await _enter(session!);
       return;
     }
+  }
+
+  Future<void> _enter(VaultSession session) async {
+    _app.startSession(session);
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => VaultFilesScreen(appState: _app, session: session),
+      ),
+    );
   }
 
   Future<void> _showSettings() async {
@@ -271,26 +188,26 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
             icon: const Icon(Icons.settings_outlined),
             onPressed: _showSettings,
           ),
-          if (_app.auth.isSignedIn)
-            PopupMenuButton<String>(
-              onSelected: (v) {
-                if (v == 'signout') _signOut();
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: 'signout',
-                  child: Text('Sign out of OneDrive'),
-                ),
-              ],
-            ),
+          PopupMenuButton<String>(
+            onSelected: (v) {
+              if (v == 'signout') _signOut();
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Text(_app.auth.email ?? 'Signed in'),
+              ),
+              const PopupMenuItem(value: 'signout', child: Text('Sign out')),
+            ],
+          ),
         ],
       ),
       floatingActionButton: _initializing
           ? null
           : FloatingActionButton.extended(
-              onPressed: _busy ? null : _addVault,
+              onPressed: _createVault,
               icon: const Icon(Icons.create_new_folder_outlined),
-              label: const Text('Add vault'),
+              label: const Text('New vault'),
             ),
       body: _buildBody(),
     );
@@ -300,40 +217,46 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
     if (_initializing) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (_vaults.isEmpty) {
-      return const _CenteredMessage(
+    final Widget content;
+    if (_loadError != null && _vaults.isEmpty) {
+      content = _CenteredMessage(
+        icon: Icons.cloud_off,
+        title: 'Could not load vaults',
+        message: '$_loadError\n\nPull down to try again.',
+      );
+    } else if (_vaults.isEmpty) {
+      content = const _CenteredMessage(
         icon: Icons.lock_outline,
         title: 'No vaults yet',
         message:
-            'Tap "Add vault" and pick a vault folder on this phone, for '
-            'example one kept in sync with your PC by Syncthing. Files are '
-            'decrypted only in memory.',
+            'Tap "New vault", or import an existing vault folder from the '
+            'desktop app. Vaults sync between your devices; files are only '
+            'decrypted in memory on this phone.',
+      );
+    } else {
+      content = ListView.builder(
+        padding: const EdgeInsets.only(bottom: 88),
+        itemCount: _vaults.length,
+        itemBuilder: (context, i) {
+          final vault = _vaults[i];
+          return ListTile(
+            leading: const Icon(Icons.lock_outline),
+            title: Text(vault.name),
+            onTap: () => _openVault(vault),
+          );
+        },
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 88),
-      itemCount: _vaults.length,
-      itemBuilder: (context, i) {
-        final vault = _vaults[i];
-        return ListTile(
-          leading: Icon(
-            vault.location == VaultLocation.oneDrive
-                ? Icons.cloud_outlined
-                : Icons.lock_outline,
-          ),
-          title: Text(vault.name),
-          subtitle: Text(vault.path, overflow: TextOverflow.ellipsis),
-          onTap: _busy ? null : () => _openVault(vault),
-          trailing: PopupMenuButton<String>(
-            onSelected: (v) {
-              if (v == 'remove') _removeVault(vault);
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'remove', child: Text('Remove from list')),
-            ],
-          ),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: _loadVaults,
+      child: content is ListView
+          ? content
+          : LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(height: constraints.maxHeight, child: content),
+              ),
+            ),
     );
   }
 }

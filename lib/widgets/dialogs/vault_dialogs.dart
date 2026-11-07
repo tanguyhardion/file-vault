@@ -1,44 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../services/cloud/cloud_vaults.dart';
+import '../vault/vault_list_item.dart';
 import 'dialog_wrapper.dart';
 
-Future<bool?> showVaultMarkerDialog(
+/// Lets the user pick one of their vaults.
+Future<CloudVault?> showVaultListDialog(
   BuildContext context, {
-  required String title,
-  required String content,
-  required String confirmText,
+  required List<CloudVault> vaults,
 }) async {
-  return await showDialog<bool>(
-    context: context,
-    builder: (ctx) => DialogWrapper(
-      title: Text(title),
-      content: Text(content),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          child: Text(confirmText),
-        ),
-      ],
-    ),
-  );
-}
-
-Future<String?> showRecentVaultsDialog(
-  BuildContext context, {
-  required List<String> recentVaults,
-  required String Function(String) displayNameMapper,
-  required Widget Function(String path, String displayName, VoidCallback onTap)
-  itemBuilder,
-}) async {
-  return await showDialog<String>(
+  return await showDialog<CloudVault>(
     context: context,
     builder: (context) => DialogWrapper(
       title: Text(
-        'Recent Vaults',
+        'Open Vault',
         style: Theme.of(
           context,
         ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -46,22 +21,66 @@ Future<String?> showRecentVaultsDialog(
       content: SizedBox(
         width: 400,
         height: 300, // Set a fixed height to enable scrolling
-        child: ListView.builder(
-          itemCount: recentVaults.length,
-          itemBuilder: (context, index) {
-            final path = recentVaults[index];
-            final displayName = displayNameMapper(path);
-            return itemBuilder(
-              path,
-              displayName,
-              () => Navigator.of(context).pop(path),
-            );
-          },
-        ),
+        child: vaults.isEmpty
+            ? const Center(child: Text('No vaults yet. Create or import one.'))
+            : ListView.builder(
+                itemCount: vaults.length,
+                itemBuilder: (context, index) {
+                  final vault = vaults[index];
+                  return VaultListItem(
+                    vault: vault,
+                    onTap: () => Navigator.of(context).pop(vault),
+                    showHoverEffect: false,
+                  );
+                },
+              ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+      ],
+    ),
+  );
+}
+
+enum ImportSource { folder, backupZip }
+
+/// Asks whether to import a vault folder or a backup ZIP.
+Future<ImportSource?> showImportSourceDialog(BuildContext context) {
+  return showDialog<ImportSource>(
+    context: context,
+    builder: (ctx) => DialogWrapper(
+      title: const Text('Import Vault'),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Upload an existing vault to your account. Files are uploaded '
+              'still encrypted and keep their vault password.',
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.folder_open),
+              title: const Text('Vault folder'),
+              subtitle: const Text('A folder containing .vault_marker'),
+              onTap: () => Navigator.of(ctx).pop(ImportSource.folder),
+            ),
+            ListTile(
+              leading: const Icon(Icons.archive_outlined),
+              title: const Text('Backup ZIP'),
+              subtitle: const Text('A backup made by File Vault'),
+              onTap: () => Navigator.of(ctx).pop(ImportSource.backupZip),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
           child: const Text('Cancel'),
         ),
       ],

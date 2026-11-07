@@ -1,37 +1,39 @@
 import 'package:flutter/material.dart';
 
-class RecentVaultItem extends StatelessWidget {
-  final String vaultPath;
-  final String displayName;
+import '../../services/cloud/cloud_vaults.dart';
+
+class VaultListItem extends StatelessWidget {
+  final CloudVault vault;
   final VoidCallback onTap;
   final bool showHoverEffect;
 
-  const RecentVaultItem({
+  const VaultListItem({
     super.key,
-    required this.vaultPath,
-    required this.displayName,
+    required this.vault,
     required this.onTap,
     this.showHoverEffect = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final created = vault.createdAt?.toLocal();
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: const Icon(Icons.folder),
+        leading: const Icon(Icons.lock_outline),
         title: Text(
-          displayName,
+          vault.name,
           style: const TextStyle(fontWeight: FontWeight.w500),
         ),
-        subtitle: Text(
-          vaultPath,
-          style: TextStyle(
-            color: Theme.of(context).textTheme.bodySmall?.color,
-            fontSize: 12,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
+        subtitle: created == null
+            ? null
+            : Text(
+                'Created ${created.toIso8601String().split('T').first}',
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                  fontSize: 12,
+                ),
+              ),
         onTap: onTap,
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         shape: RoundedRectangleBorder(
