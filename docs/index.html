@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>File Vault</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <meta name="description" content="Encrypted notes for Windows and Android, synced between your devices.">
+  <style>
+    /* Material 3 scheme generated from the app's seed colour (Colors.teal). */
+    :root {
+      color-scheme: light;
+      --primary: #006a60;
+      --on-primary: #ffffff;
+      --primary-container: #9ef2e4;
+      --on-primary-container: #00201c;
+      --tertiary-container: #cce8ff;
+      --on-tertiary-container: #001e30;
+      --surface: #f4fbf8;
+      --surface-container: #e9efed;
+      --surface-container-high: #e3eae7;
+      --on-surface: #161d1c;
+      --on-surface-variant: #3f4947;
+      --outline: #6f7977;
+      --outline-variant: #bec9c6;
+
+      /* M3 Expressive motion: spatial springs. */
+      --spring-fast: cubic-bezier(0.42, 1.67, 0.21, 0.90);
+      --spring-default: cubic-bezier(0.38, 1.21, 0.22, 1.00);
+      --effects: cubic-bezier(0.34, 0.80, 0.34, 1.00);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --primary: #53dbc9;
+        --on-primary: #003731;
+        --primary-container: #005048;
+        --on-primary-container: #74f8e5;
+        --tertiary-container: #2f4a5f;
+        --on-tertiary-container: #cce8ff;
+        --surface: #0e1513;
+        --surface-container: #1a2120;
+        --surface-container-high: #252b2a;
+        --on-surface: #dde4e1;
+        --on-surface-variant: #bec9c6;
+        --outline: #899390;
+        --outline-variant: #3f4947;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      color: var(--on-surface);
+      font-family: Roboto, "Segoe UI", system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; -webkit-tap-highlight-color: transparent; }
+    .wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* ---------- Interaction: state layer + ripple ---------- */
+    .interactive { position: relative; overflow: hidden; isolation: isolate; cursor: pointer; }
+    .interactive::before {
+      content: ""; position: absolute; inset: 0; z-index: -1;
+      background: currentColor; opacity: 0;
+      transition: opacity 150ms var(--effects);
+    }
+    .interactive:hover::before { opacity: 0.08; }
+    .interactive:focus-visible::before, .interactive:active::before { opacity: 0.10; }
+    .ripple {
+      position: absolute; z-index: -1; border-radius: 50%;
+      background: currentColor; pointer-events: none;
+      transform: scale(0); opacity: 0.12;
+      animation: ripple 550ms var(--effects) forwards;
+    }
+    .ripple.out { animation: ripple 550ms var(--effects) forwards, fade 300ms linear forwards; }
+    @keyframes ripple { to { transform: scale(1); } }
+    @keyframes fade { to { opacity: 0; } }
+    .interactive:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+    /* ---------- Top app bar ---------- */
+    header { position: sticky; top: 0; z-index: 10; background: var(--surface); }
+    header .wrap { height: 72px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 600; text-decoration: none; }
+    .brand-mark {
+      width: 40px; height: 40px; border-radius: 14px;
+      display: grid; place-items: center;
+      background: var(--primary-container);
+    }
+    .brand-mark svg { width: 22px; height: 22px; fill: var(--on-primary-container); }
+    nav { display: flex; gap: 4px; }
+    nav a {
+      font-size: 14px; font-weight: 500; letter-spacing: 0.1px; text-decoration: none;
+      color: var(--on-surface-variant);
+      height: 40px; padding: 0 16px; border-radius: 20px;
+      display: inline-flex; align-items: center;
+      transition: border-radius 250ms var(--spring-fast), color 150ms var(--effects);
+    }
+    nav a:hover { color: var(--on-surface); }
+    nav a:active { border-radius: 10px; }
+
+    /* ---------- Hero ---------- */
+    .hero { flex: 1; display: flex; align-items: center; padding: 56px 0 64px; }
+    .hero .wrap { text-align: center; }
+    .shape {
+      width: 128px; height: 128px; margin: 0 auto;
+      display: grid; place-items: center;
+      background: var(--primary-container);
+      /* clip-path set to a 9-sided "cookie" shape by the script below */
+      border-radius: 40px;
+      animation: spin 24s linear infinite;
+    }
+    .shape svg { width: 56px; height: 56px; fill: var(--on-primary-container); animation: spin 24s linear infinite reverse; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 {
+      margin: 32px 0 0;
+      font-size: clamp(40px, 7vw, 64px); line-height: 1.08;
+      font-weight: 600; letter-spacing: -0.5px;
+    }
+    h1 em { font-style: normal; color: var(--primary); }
+    .lead {
+      margin: 20px auto 0; max-width: 580px;
+      font-size: 18px; line-height: 28px; color: var(--on-surface-variant);
+    }
+    .actions { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+
+    /* Expressive buttons: round at rest, squarer while pressed. */
+    .btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      height: 56px; padding: 0 28px; border-radius: 28px;
+      font-size: 16px; font-weight: 500; letter-spacing: 0.15px; text-decoration: none;
+      transition: border-radius 300ms var(--spring-fast), transform 300ms var(--spring-fast);
+    }
+    .btn:active { border-radius: 12px; transform: scale(0.97); }
+    .btn svg { width: 22px; height: 22px; fill: currentColor; }
+    .filled { background: var(--primary); color: var(--on-primary); }
+    .tonal { background: var(--primary-container); color: var(--on-primary-container); }
+
+    .chips { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .chip {
+      height: 32px; padding: 0 14px; border-radius: 8px;
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--outline-variant);
+      font-size: 13px; font-weight: 500; color: var(--on-surface-variant);
+    }
+    .chip svg { width: 16px; height: 16px; fill: var(--primary); }
+
+    /* ---------- Features ---------- */
+    .features { padding: 0 0 88px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+    .card {
+      background: var(--surface-container);
+      color: var(--on-surface);
+      border-radius: 28px;
+      padding: 28px 24px;
+      transition: border-radius 400ms var(--spring-default), transform 400ms var(--spring-default);
+    }
+    .card:hover { border-radius: 40px; }
+    .card:active { transform: scale(0.98); }
+    .card .icon {
+      width: 52px; height: 52px; border-radius: 16px;
+      display: grid; place-items: center;
+      background: var(--tertiary-container);
+      transition: border-radius 400ms var(--spring-default), transform 400ms var(--spring-default);
+    }
+    .card:hover .icon { border-radius: 26px; transform: rotate(-8deg); }
+    .card:nth-child(odd) .icon { background: var(--primary-container); }
+    .card .icon svg { width: 26px; height: 26px; fill: var(--on-tertiary-container); }
+    .card:nth-child(odd) .icon svg { fill: var(--on-primary-container); }
+    .card h2 { margin: 20px 0 6px; font-size: 18px; line-height: 24px; font-weight: 600; }
+    .card p { margin: 0; font-size: 14px; line-height: 20px; color: var(--on-surface-variant); }
+
+    footer .wrap {
+      padding-top: 24px; padding-bottom: 24px;
+      border-top: 1px solid var(--outline-variant);
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center;
+      font-size: 13px; color: var(--on-surface-variant);
+    }
+    footer nav a { height: 32px; padding: 0 12px; font-size: 13px; }
+
+    @media (max-width: 520px) {
+      nav.top a:first-child { display: none; }
+      .btn { width: 100%; justify-content: center; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <a class="brand" href="./">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+        </span>
+        File Vault
+      </a>
+      <nav class="top">
+        <a class="interactive" href="https://github.com/tanguyhardion/file-vault/releases">Releases</a>
+        <a class="interactive" href="https://github.com/tanguyhardion/file-vault">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="shape" id="cookie">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+      </div>
+      <h1>Your notes, <em>encrypted</em><br>on every device.</h1>
+      <p class="lead">File Vault keeps password-protected vaults of notes in sync between Windows and Android. Everything is encrypted on your device before it is uploaded.</p>
+      <div class="actions">
+        <a class="btn filled interactive" href="https://github.com/tanguyhardion/file-vault/releases/latest">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+          Download
+        </a>
+        <a class="btn tonal interactive" href="https://github.com/tanguyhardion/file-vault">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+          View source
+        </a>
+      </div>
+      <div class="chips">
+        <span class="chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V6.75l6-1.32v6.48L3 12zm17-9v8.75l-10 .15V5.21L20 3zM3 13l6 .09v6.81l-6-1.15V13zm17 .25V22l-10-1.91V13.1l10 .15z"/></svg>Windows</span>
+        <span class="chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24a11.463 11.463 0 0 0-8.94 0L5.65 5.67a.643.643 0 0 0-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.78 10.78 0 0 0 1 18h22a10.78 10.78 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>Android</span>
+        <span class="chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>Open source</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="wrap grid">
+      <div class="card interactive">
+        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></div>
+        <h2>AES-256-GCM encryption</h2>
+        <p>Every file is encrypted with its own salt and nonce, using a key derived from your vault password.</p>
+      </div>
+      <div class="card interactive">
+        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h18V4H4c-1.1 0-2 .9-2 2v11H0v3h14v-3H4V6zm19 2h-6c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V9c0-.55-.45-1-1-1zm-1 9h-4v-7h4v7z"/></svg></div>
+        <h2>Synced across devices</h2>
+        <p>Sign in on Windows and Android to get the same vaults everywhere, with edit conflict detection.</p>
+      </div>
+      <div class="card interactive">
+        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78 3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg></div>
+        <h2>Zero knowledge</h2>
+        <p>Vault passwords never leave your device. The server only ever stores ciphertext.</p>
+      </div>
+      <div class="card interactive">
+        <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg></div>
+        <h2>Encrypted backups</h2>
+        <p>Export vaults to encrypted ZIP files you can safely keep in OneDrive or anywhere else.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>File Vault</span>
+      <nav>
+        <a class="interactive" href="https://github.com/tanguyhardion/file-vault">GitHub</a>
+        <a class="interactive" href="https://github.com/tanguyhardion/file-vault/releases">Releases</a>
+        <a class="interactive" href="https://github.com/tanguyhardion/file-vault/blob/main/LICENSE">License</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    // Expressive "cookie" shape: a circle with 9 soft scallops.
+    (function () {
+      var pts = [], n = 180, lobes = 9, depth = 0.07;
+      for (var i = 0; i < n; i++) {
+        var t = (i / n) * Math.PI * 2;
+        var r = 50 * (1 - depth + depth * Math.cos(lobes * t));
+        pts.push((50 + r * Math.cos(t)).toFixed(2) + '% ' + (50 + r * Math.sin(t)).toFixed(2) + '%');
+      }
+      var el = document.getElementById('cookie');
+      el.style.borderRadius = '0';
+      el.style.clipPath = 'polygon(' + pts.join(',') + ')';
+    })();
+
+    // Material ripple: grows from the pointer, fades once released.
+    document.querySelectorAll('.interactive').forEach(function (el) {
+      el.addEventListener('pointerdown', function (e) {
+        var rect = el.getBoundingClientRect();
+        var x = e.clientX - rect.left, y = e.clientY - rect.top;
+        var size = 2 * Math.hypot(Math.max(x, rect.width - x), Math.max(y, rect.height - y));
+        var ripple = document.createElement('span');
+        ripple.className = 'ripple';
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (x - size / 2) + 'px';
+        ripple.style.top = (y - size / 2) + 'px';
+        el.appendChild(ripple);
+        var release = function () {
+          ripple.classList.add('out');
+          setTimeout(function () { ripple.remove(); }, 600);
+          window.removeEventListener('pointerup', release);
+          window.removeEventListener('pointercancel', release);
+        };
+        window.addEventListener('pointerup', release);
+        window.addEventListener('pointercancel', release);
+      });
+    });
+  </script>
+</body>
+</html>

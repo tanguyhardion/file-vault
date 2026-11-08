@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>File Vault</title>
+  <link rel="icon" type="image/png" href="../icon.png">
+  <link rel="apple-touch-icon" href="../icon.png">
+  <style>
+    /* Material 3 scheme generated from the app's seed colour (Colors.teal). */
+    :root {
+      color-scheme: light;
+      --primary: #006a60;
+      --surface: #f4fbf8;
+      --on-surface: #161d1c;
+      --on-surface-variant: #3f4947;
+      --error: #ba1a1a;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --primary: #53dbc9;
+        --surface: #0e1513;
+        --on-surface: #dde4e1;
+        --on-surface-variant: #bec9c6;
+        --error: #ffb4ab;
+      }
+    }
+    * { box-sizing: border-box; }
+    /* Browsers don't apply the hidden attribute to inline SVG by default. */
+    [hidden] { display: none !important; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--surface);
+      color: var(--on-surface);
+      font-family: Roboto, "Segoe UI", system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    main {
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    svg { width: 56px; height: 56px; fill: var(--primary); }
+    .error svg { fill: var(--error); }
+    /* headlineSmall */
+    h1 { margin: 16px 0 0; font-size: 24px; line-height: 32px; font-weight: 400; }
+    /* bodySmall */
+    p {
+      margin: 8px 0 0;
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: 0.4px;
+      color: var(--on-surface-variant);
+    }
+  </style>
+</head>
+<body>
+  <main id="root">
+    <!-- Material icon: mark_email_read -->
+    <svg id="ok-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19c0-3.87 3.13-7 7-7 1.08 0 2.09.25 3 .68V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h8.08c-.05-.33-.08-.66-.08-1zM4 6l8 5 8-5v2l-8 5-8-5V6zm13.34 16l-3.54-3.54 1.41-1.41 2.12 2.12 4.24-4.24L23 16.34 17.34 22z"/></svg>
+    <!-- Material icon: error_outline -->
+    <svg id="err-icon" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg>
+    <h1 id="title">Email confirmed</h1>
+    <p id="msg">Your account is ready. You can close this page and sign in to File Vault on any of your devices.</p>
+  </main>
+  <script>
+    // Supabase appends the result to the URL fragment (and sometimes the query).
+    var params = new URLSearchParams(location.hash.slice(1) + '&' + location.search.slice(1));
+    // The fragment can hold session tokens: drop it from the address bar and history.
+    if (location.hash || location.search) history.replaceState(null, '', location.pathname);
+    var error = params.get('error_description') || params.get('error');
+    if (error) {
+      document.getElementById('root').className = 'error';
+      document.getElementById('ok-icon').hidden = true;
+      document.getElementById('err-icon').hidden = false;
+      document.getElementById('title').textContent = 'Could not confirm your email';
+      document.getElementById('msg').textContent =
+        error.replace(/\+/g, ' ').replace(/\.?$/, '.') +
+        ' Try signing in to the app. If that fails, create the account again to get a new link.';
+    }
+  </script>
+</body>
+</html>
