@@ -8,7 +8,7 @@ import 'crypto_service.dart';
 /// Parsed contents of a vault's `.vault_marker` file.
 ///
 /// The marker only holds the PBKDF2 salt and hash of the vault password, so it
-/// is safe to store alongside the encrypted files (e.g. in OneDrive).
+/// is safe to store alongside the encrypted files (e.g. in the database).
 class VaultMarker {
   static const fileName = '.vault_marker';
 
@@ -36,6 +36,26 @@ class VaultMarker {
     } on FormatException {
       return null;
     }
+  }
+
+  /// A marker for a new vault protected by [password].
+  static Future<VaultMarker> create(String password) async {
+    final salt = CryptoService.randomSalt();
+    final hash = await CryptoService.hashPassword(
+      password: password,
+      salt: salt,
+    );
+    return VaultMarker(salt: salt, passwordHash: hash);
+  }
+
+  /// `.vault_marker` file contents, as written in backups.
+  String toFileContents({DateTime? createdAt, bool autoBackupEnabled = false}) {
+    final created = (createdAt ?? DateTime.now()).toUtc().toIso8601String();
+    return 'vault_version: 1\n'
+        'created_at: $created\n'
+        'salt: ${base64Encode(salt)}\n'
+        'password_hash: ${base64Encode(passwordHash)}\n'
+        'auto_backup_enabled: $autoBackupEnabled\n';
   }
 
   Future<bool> verifyPassword(String password) async {

@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../services/cloud/cloud_auth.dart';
+import '../services/cloud/cloud_vaults.dart';
 import 'mobile_app_state.dart';
 import 'screens/mobile_home_screen.dart';
 
 /// Entry point of the Android UI.
 class MobileRoot extends StatefulWidget {
-  const MobileRoot({super.key});
+  final CloudAuth auth;
+  final CloudVaultRepository repository;
+
+  const MobileRoot({super.key, required this.auth, required this.repository});
 
   @override
   State<MobileRoot> createState() => _MobileRootState();
 }
 
 class _MobileRootState extends State<MobileRoot> {
-  final MobileAppState _appState = MobileAppState();
+  late final MobileAppState _appState = MobileAppState(
+    auth: widget.auth,
+    repository: widget.repository,
+  );
 
   @override
   void dispose() {

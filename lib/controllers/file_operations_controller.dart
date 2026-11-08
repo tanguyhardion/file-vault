@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import '../models/vault_models.dart';
-import '../services/vault_service.dart';
-import '../services/crypto_worker.dart';
 import '../services/content_cache.dart';
+import '../services/storage/vault_storage.dart';
+import '../services/vault_session.dart';
 import 'vault_controller.dart';
 
 class FileOperationsController extends ChangeNotifier {
   final VaultController _vaultController;
-  DecryptedFileContent? _openedContent;
-  // On-disk state when the file was opened/saved; detects synced changes.
-  FileFingerprint? _openedFingerprint;
+  // Holds the version it was read at; saving fails if another device changed
+  // the file since.
+  OpenedVaultFile? _openedContent;
   bool _dirty = false;
   bool _loading = false;
 
   FileOperationsController(this._vaultController);
 
-  DecryptedFileContent? get openedContent => _openedContent;
+  OpenedVaultFile? get openedContent => _openedContent;
   bool get dirty => _dirty;
   bool get loading => _loading;
 
@@ -31,184 +29,81 @@ class FileOperationsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> openFile(VaultFileEntry file) async {
-    final password = _vaultController.vaultPassword;
-    if (password == null) return;
-
-    setLoading(true);
-    try {
-      // Check cache before reading/decrypting
-      final fp = await VaultService.getFingerprint(file.fullPath);
-      final cached = ContentCache.instance.getIfFresh(file.fullPath, fp);
-      if (cached != null) {
-        _openedContent = DecryptedFileContent(content: cached, source: file);
-        _openedFingerprint = fp;
-        _dirty = false;
-        setLoading(false);
-        return;
-      }
-
-      final bytes = await VaultService.readVaultFileBytes(file.fullPath);
-      String text;
-      if (bytes.isEmpty) {
-        text = '';
-      } else {
-        // Offload decryption to a background isolate for responsiveness
-        text = await CryptoWorker.decryptToString(
-          data: bytes,
-          password: password,
-        );
-      }
-
-      _openedContent = DecryptedFileContent(content: text, source: file);
-      _openedFingerprint = fp;
-      _dirty = false;
-      setLoading(false);
-
-      // Update cache with the same fingerprint we checked earlier
-      ContentCache.instance.put(file.fullPath, text, fp);
-    } catch (e) {
-      setLoading(false);
-      rethrow;
-    }
-  }
-
-  Future<VaultFileEntry> createNewFile(String name) async {
-    final vaultDir = _vaultController.vaultDir;
-    final password = _vaultController.vaultPassword;
-
-    if (vaultDir == null || password == null) {
+  VaultSession _requireSession() {
+    final session = _vaultController.session;
+    if (session == null || session.isLocked) {
       throw Exception('No vault is open');
     }
+    return session;
+  }
 
+  Future<T> _withLoading<T>(Future<T> Function() action) async {
     setLoading(true);
     try {
-      // Create file with empty content
-      final Uint8List encrypted = await CryptoWorker.encryptString(
-        content: '',
-        password: password,
-      );
-
-      final entry = await VaultService.writeVaultFileBytes(
-        dirPath: vaultDir,
-        fileNameWithoutExt: name,
-        encryptedBytes: encrypted,
-      );
-
-      await _vaultController.refreshFiles();
-
-      _openedContent = DecryptedFileContent(content: '', source: entry);
-      _openedFingerprint = await VaultService.getFingerprint(entry.fullPath);
-      _dirty = false;
+      return await action();
+    } finally {
       setLoading(false);
-
-      return entry;
-    } catch (e) {
-      setLoading(false);
-      rethrow;
     }
   }
 
-  /// Throws [FileChangedExternallyException] if the file changed on disk since
-  /// it was opened, unless [overwrite] is set.
+  Future<void> openFile(VaultItem file) => _withLoading(() async {
+    final opened = await _requireSession().openFile(file);
+    _openedContent = opened;
+    _dirty = false;
+    ContentCache.instance.put(
+      opened.item.id,
+      opened.content,
+      opened.item.version,
+    );
+  });
+
+  Future<VaultItem> createNewFile(String name) => _withLoading(() async {
+    final opened = await _requireSession().createFile(name);
+    _openedContent = opened;
+    _dirty = false;
+    return opened.item;
+  });
+
+  /// Throws [FileChangedExternallyException] if the file changed on another
+  /// device since it was opened, unless [overwrite] is set.
   Future<void> saveCurrentFile(String content, {bool overwrite = false}) async {
     final current = _openedContent;
-    final password = _vaultController.vaultPassword;
-    if (current == null || password == null) return;
-
-    setLoading(true);
-    try {
-      if (!overwrite && _openedFingerprint != null) {
-        final onDisk = await VaultService.getFingerprint(
-          current.source.fullPath,
-        );
-        if (onDisk != _openedFingerprint) {
-          throw FileChangedExternallyException();
-        }
-      }
-
-      // Offload encryption to background isolate
-      final encrypted = await CryptoWorker.encryptString(
-        content: content,
-        password: password,
+    if (current == null) return;
+    await _withLoading(() async {
+      final saved = await _requireSession().save(
+        current,
+        content,
+        overwrite: overwrite,
       );
-
-      await VaultService.overwriteVaultFileBytes(
-        fullPath: current.source.fullPath,
-        encryptedBytes: encrypted,
-      );
-
-      _openedContent = DecryptedFileContent(
-        content: content,
-        source: current.source,
-      );
+      _openedContent = saved;
       _dirty = false;
-      setLoading(false);
-
-      // Refresh cache with new fingerprint
-      final fp = await VaultService.getFingerprint(current.source.fullPath);
-      _openedFingerprint = fp;
-      ContentCache.instance.put(current.source.fullPath, content, fp);
-    } catch (e) {
-      setLoading(false);
-      rethrow;
-    }
+      ContentCache.instance.put(saved.item.id, content, saved.item.version);
+    });
   }
 
-  Future<VaultFileEntry> renameFile(VaultFileEntry file, String newName) async {
-    final vaultDir = _vaultController.vaultDir;
-    if (vaultDir == null) throw Exception('No vault is open');
+  Future<VaultItem> renameFile(VaultItem file, String newName) =>
+      _withLoading(() async {
+        final updated = await _requireSession().renameFile(file, newName);
+        final current = _openedContent;
+        if (current?.item.id == file.id) {
+          _openedContent = OpenedVaultFile(
+            item: updated,
+            content: current!.content,
+          );
+        }
+        return updated;
+      });
 
-    setLoading(true);
-    try {
-      final updated = await VaultService.renameVaultFile(
-        fullPath: file.fullPath,
-        newFileNameWithoutExt: newName,
-      );
-
-      await _vaultController.refreshFiles();
-
-      // If currently open, update source path and title
-      if (_openedContent?.source.fullPath == file.fullPath) {
-        _openedContent = DecryptedFileContent(
-          content: _openedContent!.content,
-          source: updated,
-        );
-      }
-
-      setLoading(false);
-      return updated;
-    } catch (e) {
-      setLoading(false);
-      rethrow;
+  Future<void> deleteFile(VaultItem file) => _withLoading(() async {
+    await _requireSession().deleteFile(file);
+    if (_openedContent?.item.id == file.id) {
+      _openedContent = null;
+      _dirty = false;
     }
-  }
-
-  Future<void> deleteFile(VaultFileEntry file) async {
-    final vaultDir = _vaultController.vaultDir;
-    if (vaultDir == null) throw Exception('No vault is open');
-
-    setLoading(true);
-    try {
-      await VaultService.deleteVaultFile(file.fullPath);
-      await _vaultController.refreshFiles();
-
-      if (_openedContent?.source.fullPath == file.fullPath) {
-        _openedContent = null;
-        _openedFingerprint = null;
-        _dirty = false;
-      }
-
-      setLoading(false);
-    } catch (e) {
-      setLoading(false);
-      rethrow;
-    }
-  }
+  });
 
   void closeFile() {
     _openedContent = null;
-    _openedFingerprint = null;
     _dirty = false;
     notifyListeners();
   }

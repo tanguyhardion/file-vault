@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
-import '../../models/vault_models.dart';
+import '../../services/storage/vault_storage.dart';
+import '../../services/vault_session.dart';
 import 'file_item_menu.dart';
 
 class FileList extends StatelessWidget {
-  final List<VaultFileEntry> files;
-  final DecryptedFileContent? openedContent;
+  final List<VaultItem> files;
+  final OpenedVaultFile? openedContent;
   final int? hoveredIndex;
   final ValueChanged<int?> onHoverChanged;
-  final void Function(VaultFileEntry) onOpenFile;
-  final void Function(VaultFileEntry) onRename;
-  final void Function(VaultFileEntry) onDelete;
+  final void Function(VaultItem) onOpenFile;
+  final void Function(VaultItem) onRename;
+  final void Function(VaultItem) onDelete;
 
   const FileList({
     super.key,
@@ -32,14 +33,14 @@ class FileList extends StatelessWidget {
       itemCount: files.length,
       itemBuilder: (context, index) {
         final f = files[index];
-        final isOpen = openedContent?.source.fullPath == f.fullPath;
+        final isOpen = openedContent?.item.id == f.id;
         final isHovered = hoveredIndex == index;
         return MouseRegion(
           onEnter: (_) => onHoverChanged(index),
           onExit: (_) => onHoverChanged(null),
           child: ListTile(
             selected: isOpen,
-            title: Text(f.fileName),
+            title: Text(f.name),
             onTap: () => onOpenFile(f),
             leading: const Icon(Icons.insert_drive_file_outlined),
             trailing: isHovered

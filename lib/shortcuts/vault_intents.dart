@@ -8,8 +8,8 @@ class OpenVaultIntent extends Intent {
   const OpenVaultIntent();
 }
 
-class ShowRecentVaultsIntent extends Intent {
-  const ShowRecentVaultsIntent();
+class ImportVaultIntent extends Intent {
+  const ImportVaultIntent();
 }
 
 class CreateVaultIntent extends Intent {

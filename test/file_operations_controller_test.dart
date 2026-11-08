@@ -1,52 +1,47 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:file_vault/controllers/file_operations_controller.dart';
 import 'package:file_vault/controllers/vault_controller.dart';
-import 'package:file_vault/services/crypto_worker.dart';
-import 'package:file_vault/services/vault_service.dart';
+import 'package:file_vault/services/cloud/cloud_vaults.dart';
+import 'package:file_vault/services/storage/vault_storage.dart';
+import 'package:file_vault/services/vault_session.dart';
+
+import 'fake_supabase.dart';
 
 void main() {
   const password = 'pw';
-  late Directory dir;
+  late CloudVaultRepository repo;
+  late CloudVault cloudVault;
   late VaultController vault;
   late FileOperationsController ops;
 
   setUp(() async {
-    dir = await Directory.systemTemp.createTemp('file_vault_test');
-    vault = VaultController();
-    final entry = await VaultService.writeVaultFileBytes(
-      dirPath: dir.path,
-      fileNameWithoutExt: 'note',
-      encryptedBytes: await CryptoWorker.encryptString(
-        content: 'original',
-        password: password,
-      ),
-    );
-    vault.setVaultOpen(dir.path, password, [entry]);
+    final server = FakeSupabase()..users['me@example.com'] = 'account';
+    final auth = server.auth();
+    await auth.init();
+    await auth.signIn('me@example.com', 'account');
+    repo = server.repository(auth);
+    vault = VaultController(repo);
+    cloudVault = await vault.createVault('Personal', password);
     ops = FileOperationsController(vault);
-    await ops.openFile(entry);
+    await ops.createNewFile('note');
+    await ops.saveCurrentFile('original');
   });
 
-  tearDown(() => dir.delete(recursive: true));
-
-  test('saves normally when the file is unchanged on disk', () async {
+  test('saves normally when the file is unchanged', () async {
     await ops.saveCurrentFile('edited');
     await ops.saveCurrentFile('edited again');
     expect(ops.dirty, isFalse);
   });
 
-  test('refuses to save over a file synced from another device', () async {
-    final path = ops.openedContent!.source.fullPath;
-    // Simulate OneDrive syncing down a newer version.
-    await VaultService.overwriteVaultFileBytes(
-      fullPath: path,
-      encryptedBytes: await CryptoWorker.encryptString(
-        content: 'from phone, a bit longer',
-        password: password,
-      ),
+  test('refuses to save over a file edited on another device', () async {
+    final phone = await VaultSession.unlock(
+      repo.storageFor(cloudVault),
+      cloudVault,
+      password,
     );
+    final onPhone = await phone.openFile(phone.files.single);
+    await phone.save(onPhone, 'from phone, a bit longer');
 
     await expectLater(
       ops.saveCurrentFile('stale desktop edit'),
@@ -55,9 +50,8 @@ void main() {
     expect(ops.loading, isFalse);
 
     await ops.saveCurrentFile('stale desktop edit', overwrite: true);
-    final bytes = await VaultService.readVaultFileBytes(path);
     expect(
-      await CryptoWorker.decryptToString(data: bytes, password: password),
+      (await phone.openFile(phone.files.single)).content,
       'stale desktop edit',
     );
   });

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../services/vault_service.dart';
+import '../../services/storage/vault_storage.dart';
 import '../mobile_app_state.dart';
-import '../vault_session.dart';
+import '../../services/vault_session.dart';
 
 enum _ConflictChoice { keepEditing, reload, overwrite }
 

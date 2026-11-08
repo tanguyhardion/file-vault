@@ -1,15 +1,13 @@
 import 'dart:collection';
 
-import 'vault_service.dart';
-
 class _CacheEntry {
   final String content;
-  final FileFingerprint fp;
+  final String version;
 
-  _CacheEntry(this.content, this.fp);
+  _CacheEntry(this.content, this.version);
 }
 
-/// LRU cache for decrypted file contents keyed by full path.
+/// LRU cache for decrypted file contents keyed by file ID and version.
 class ContentCache {
   static final ContentCache instance = ContentCache._(maxEntries: 10);
 
@@ -20,20 +18,20 @@ class ContentCache {
 
   void clear() => _map.clear();
 
-  String? getIfFresh(String path, FileFingerprint fp) {
-    final entry = _map.remove(path);
+  String? getIfFresh(String id, String version) {
+    final entry = _map.remove(id);
     if (entry == null) return null;
-    if (entry.fp == fp) {
+    if (entry.version == version) {
       // reinsert to update LRU order
-      _map[path] = entry;
+      _map[id] = entry;
       return entry.content;
     }
     return null;
   }
 
-  void put(String path, String content, FileFingerprint fp) {
-    _map.remove(path);
-    _map[path] = _CacheEntry(content, fp);
+  void put(String id, String content, String version) {
+    _map.remove(id);
+    _map[id] = _CacheEntry(content, version);
     if (_map.length > maxEntries) {
       // remove oldest
       _map.remove(_map.keys.first);

@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import '../vault/recent_vault_item.dart';
+
+import '../../services/cloud/cloud_vaults.dart';
+import '../vault/vault_list_item.dart';
 
 class EmptyState extends StatelessWidget {
-  final List<String> recentVaults;
-  final void Function(String path) onOpenRecent;
-  final VoidCallback? onShowAllRecent;
+  final List<CloudVault> vaults;
+  final void Function(CloudVault vault) onOpenVault;
+  final VoidCallback? onShowAllVaults;
   final bool isVaultOpen;
 
   const EmptyState({
     super.key,
-    required this.recentVaults,
-    required this.onOpenRecent,
-    this.onShowAllRecent,
+    required this.vaults,
+    required this.onOpenVault,
+    this.onShowAllVaults,
     required this.isVaultOpen,
   });
 
@@ -28,35 +29,42 @@ class EmptyState extends StatelessWidget {
             const SizedBox(height: 12),
             const Text('Select a file to view its content'),
           ],
-          // If no vault is open, only show recent vaults
-          if (!isVaultOpen && recentVaults.isNotEmpty) ...[
+          if (!isVaultOpen && vaults.isEmpty) ...[
+            const Icon(Icons.lock_outline, size: 56),
+            const SizedBox(height: 12),
+            const Text(
+              'No vaults yet. Create one (Ctrl+N), or import an existing '
+              'vault folder or backup (Ctrl+I).',
+            ),
+          ],
+          // If no vault is open, show the account's vaults
+          if (!isVaultOpen && vaults.isNotEmpty) ...[
             Container(
               constraints: const BoxConstraints(maxWidth: 400),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Recent Vaults',
+                    'Your Vaults',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ...recentVaults.take(3).map((vaultPath) {
-                    final vaultName = p.basename(vaultPath);
-                    return RecentVaultItem(
-                      vaultPath: vaultPath,
-                      displayName: vaultName,
-                      onTap: () => onOpenRecent(vaultPath),
-                      showHoverEffect: true,
-                    );
-                  }),
-                  if (recentVaults.length > 3 && onShowAllRecent != null) ...[
+                  ...vaults
+                      .take(3)
+                      .map(
+                        (vault) => VaultListItem(
+                          vault: vault,
+                          onTap: () => onOpenVault(vault),
+                        ),
+                      ),
+                  if (vaults.length > 3 && onShowAllVaults != null) ...[
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.center,
                       child: TextButton.icon(
-                        onPressed: onShowAllRecent,
+                        onPressed: onShowAllVaults,
                         icon: const Icon(Icons.more_horiz, size: 16),
                         label: const Text('More'),
                         style: TextButton.styleFrom(

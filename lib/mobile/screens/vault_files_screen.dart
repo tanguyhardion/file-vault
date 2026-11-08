@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../widgets/widgets.dart';
 import '../mobile_app_state.dart';
-import '../storage/vault_storage.dart';
-import '../vault_session.dart';
+import '../../services/storage/vault_storage.dart';
+import '../../services/vault_session.dart';
 import 'file_editor_screen.dart';
 
 class VaultFilesScreen extends StatefulWidget {

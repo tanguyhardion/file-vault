@@ -5,7 +5,6 @@ import '../widgets.dart';
 
 class VaultLeftPanel extends StatelessWidget {
   final VaultHomePageController controller;
-  final VoidCallback onOpenVaultInExplorer;
   final VoidCallback onCreateNewFile;
   final Function(dynamic file) onOpenFile;
   final Function(dynamic file) onRename;
@@ -14,7 +13,6 @@ class VaultLeftPanel extends StatelessWidget {
   const VaultLeftPanel({
     super.key,
     required this.controller,
-    required this.onOpenVaultInExplorer,
     required this.onCreateNewFile,
     required this.onOpenFile,
     required this.onRename,
@@ -29,10 +27,7 @@ class VaultLeftPanel extends StatelessWidget {
         children: [
           Column(
             children: [
-              VaultHeader(
-                vaultDir: controller.vaultController.vaultDir,
-                onOpenInExplorer: onOpenVaultInExplorer,
-              ),
+              VaultHeader(vaultName: controller.vaultController.vault?.name),
               _buildSearchBar(),
               Expanded(child: _buildFileList()),
             ],
@@ -117,11 +112,11 @@ class VaultLeftPanel extends StatelessWidget {
   }
 
   Widget _buildFileList() {
-    return controller.vaultController.vaultDir == null
+    return !controller.vaultController.isVaultOpen
         ? const Center(
             child: Padding(
               padding: EdgeInsets.all(16.0),
-              child: Text('Open a vault folder to see your secret files'),
+              child: Text('Open a vault to see your secret files'),
             ),
           )
         : FileList(
