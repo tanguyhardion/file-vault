@@ -27,12 +27,14 @@ File Vault is designed to keep your files safe and private. Here’s how it work
 
 If you lose your password, your files cannot be recovered—no backdoors, no tricks. Your secrets stay yours.
 
-## Database setup (once)
+## Database setup
+
+The app is preconfigured for its own Supabase project, so this is only needed to use your own database.
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. Apply the schema in `supabase/migrations/` (SQL editor, or `supabase db push`). It creates the `vaults` and `vault_files` tables with row-level security.
 3. In **Authentication → Providers**, keep **Email** enabled. Turn off "Confirm email" if you don't want to confirm your address before the first sign-in.
-4. Note the project URL and the publishable (anon) key from **Project Settings → API**. The key is meant to ship in apps; row-level security restricts every account to its own rows.
+4. Build with `--dart-define=SUPABASE_URL=https://<project>.supabase.co --dart-define=SUPABASE_KEY=<publishable-key>` (from **Project Settings → API**). The publishable key is meant to ship in apps; row-level security restricts every account to its own rows.
 
 ## Getting Started
 
@@ -48,7 +50,7 @@ If you lose your password, your files cannot be recovered—no backdoors, no tri
    ```
 4. Build and run for Windows:
    ```sh
-   flutter run -d windows --dart-define=SUPABASE_URL=https://<project>.supabase.co --dart-define=SUPABASE_KEY=<publishable-key>
+   flutter run -d windows
    ```
 
 On first launch, create an account (or sign in), then create a vault, or import an existing vault folder (the one containing `.vault_marker`) or a backup ZIP with **Import** (Ctrl+I). Imported vaults keep their password.
@@ -64,7 +66,7 @@ The Android app shows the vaults of the account you sign in with. It decrypts fi
 ### Build and install
 
 ```sh
-flutter build apk --release --dart-define=SUPABASE_URL=https://<project>.supabase.co --dart-define=SUPABASE_KEY=<publishable-key>
+flutter build apk --release
 ```
 
 Copy `build/app/outputs/flutter-apk/app-release.apk` to your phone and open it (allow installing from unknown sources), or with the phone connected over USB run `flutter install`.

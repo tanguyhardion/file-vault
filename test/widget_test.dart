@@ -1,4 +1,3 @@
-import 'package:file_vault/app.dart';
 import 'package:file_vault/screens/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,13 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'fake_supabase.dart';
 
 void main() {
-  testWidgets('FileVaultApp without a database explains how to build', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const FileVaultApp());
-    expect(find.textContaining('SUPABASE_URL'), findsOneWidget);
-  });
-
   testWidgets('sign-in screen signs in', (WidgetTester tester) async {
     final server = FakeSupabase()..users['me@example.com'] = 'account-pw';
     final auth = server.auth();
