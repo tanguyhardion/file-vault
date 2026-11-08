@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../services/content_cache.dart';
 import '../services/storage/vault_storage.dart';

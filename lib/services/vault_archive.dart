@@ -42,9 +42,7 @@ class VaultArchive {
       final bytes = await storage.read(item);
       archive.addFile(ArchiveFile(item.name, bytes.length, bytes));
     }
-    final zip = ZipEncoder().encode(archive);
-    if (zip == null) throw Exception('Failed to create ZIP archive');
-    return Uint8List.fromList(zip);
+    return Uint8List.fromList(ZipEncoder().encode(archive));
   }
 
   /// Top-level files of a vault folder.

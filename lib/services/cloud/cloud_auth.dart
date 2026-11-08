@@ -68,9 +68,8 @@ class CloudAuth extends ChangeNotifier {
     required this.baseUrl,
     required this.apiKey,
     http.Client? client,
-    TokenStore store = const SecureTokenStore(),
-  }) : _http = client ?? http.Client(),
-       _store = store;
+    this._store = const SecureTokenStore(),
+  }) : _http = client ?? http.Client();
 
   bool get initialized => _initialized;
   bool get isSignedIn => _refreshToken != null;
