@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../services/cloud/cloud_vaults.dart';
+import '../expressive/shaped_icon.dart';
 import '../vault/vault_list_item.dart';
 
 class EmptyState extends StatelessWidget {
@@ -25,13 +26,13 @@ class EmptyState extends StatelessWidget {
         children: [
           // If a vault is open, show the "select a file" message
           if (isVaultOpen) ...[
-            const Icon(Icons.lock_open, size: 56),
-            const SizedBox(height: 12),
+            ShapedIcon(Icons.lock_open, shape: MaterialShapes.sunny),
+            const SizedBox(height: 20),
             const Text('Select a file to view its content'),
           ],
           if (!isVaultOpen && vaults.isEmpty) ...[
-            const Icon(Icons.lock_outline, size: 56),
-            const SizedBox(height: 12),
+            const ShapedIcon(Icons.lock_outline),
+            const SizedBox(height: 20),
             const Text(
               'No vaults yet. Create one (Ctrl+N), or import an existing '
               'vault folder or backup (Ctrl+I).',

@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../services/cloud/cloud_vaults.dart';
+import '../../theme/app_theme.dart';
 
 class VaultListItem extends StatelessWidget {
   final CloudVault vault;
@@ -36,9 +37,7 @@ class VaultListItem extends StatelessWidget {
               ),
         onTap: onTap,
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: AppShapes.large),
         hoverColor: showHoverEffect
             ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
             : null,

@@ -1,4 +1,6 @@
 import 'package:material_ui/material_ui.dart';
+
+import '../../theme/app_theme.dart';
 import 'dialog_wrapper.dart';
 
 Future<bool> confirmDeletion(
@@ -125,7 +127,7 @@ class _AutoBackupSettingsDialogState extends State<_AutoBackupSettingsDialog> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppShapes.medium,
               ),
               child: Row(
                 children: [

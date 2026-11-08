@@ -1,5 +1,7 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../../theme/app_theme.dart';
 import 'dialog_wrapper.dart';
 import '../../services/backup_service.dart';
 
@@ -69,7 +71,7 @@ class _BackupDialogState extends State<_BackupDialog> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border.all(color: Theme.of(context).dividerColor),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppShapes.medium,
             ),
             child: Row(
               children: [

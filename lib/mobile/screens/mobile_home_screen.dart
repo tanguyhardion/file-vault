@@ -215,7 +215,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
 
   Widget _buildBody() {
     if (_initializing) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: LoadingIndicator());
     }
     final Widget content;
     if (_loadError != null && _vaults.isEmpty) {
@@ -281,8 +281,8 @@ class _CenteredMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 56, color: theme.colorScheme.primary),
-            const SizedBox(height: 16),
+            ShapedIcon(icon),
+            const SizedBox(height: 24),
             Text(title, style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(

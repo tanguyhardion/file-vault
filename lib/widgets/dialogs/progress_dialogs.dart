@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../expressive/loading_indicator.dart';
 import 'dialog_wrapper.dart';
 
 /// Shows a blocking dialog with a loading indicator and custom message.
@@ -14,7 +15,7 @@ void showLoadingDialog(BuildContext context, {String message = 'Loading...'}) {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(),
+            const LoadingIndicator(contained: true),
             const SizedBox(width: 20),
             Text(message),
           ],

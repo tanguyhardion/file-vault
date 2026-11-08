@@ -4,6 +4,7 @@ import '../../controllers/vault_home_page_controller.dart';
 import '../../services/cloud/cloud_vaults.dart';
 import '../content/content_editor.dart';
 import '../content/empty_state.dart';
+import '../expressive/loading_indicator.dart';
 
 class VaultMainContent extends StatelessWidget {
   final VaultHomePageController controller;
@@ -20,7 +21,7 @@ class VaultMainContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (controller.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: LoadingIndicator());
     }
 
     if (controller.fileOperationsController.openedContent == null) {

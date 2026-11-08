@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../services/cloud/cloud_auth.dart';
+import '../widgets/expressive/shaped_icon.dart';
 
 /// Email + password sign-in to the account that stores the vaults.
 class SignInScreen extends StatefulWidget {
@@ -84,8 +85,13 @@ class _SignInScreenState extends State<SignInScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.lock, size: 56, color: theme.colorScheme.primary),
-                  const SizedBox(height: 16),
+                  Center(
+                    child: ShapedIcon(
+                      Icons.lock,
+                      shape: MaterialShapes.cookie12Sided,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Text(
                     _creating ? 'Create account' : 'Sign in to File Vault',
                     textAlign: TextAlign.center,

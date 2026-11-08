@@ -9,6 +9,8 @@ import 'services/cloud/cloud_auth.dart';
 import 'services/cloud/cloud_client.dart';
 import 'services/cloud/cloud_config.dart';
 import 'services/cloud/cloud_vaults.dart';
+import 'theme/app_theme.dart';
+import 'widgets/expressive/loading_indicator.dart';
 
 class FileVaultApp extends StatefulWidget {
   const FileVaultApp({super.key});
@@ -42,16 +44,8 @@ class _FileVaultAppState extends State<FileVaultApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'File Vault',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.teal,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.teal,
-        brightness: Brightness.dark,
-      ),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
       home: CloudConfig.isConfigured
           ? ListenableBuilder(listenable: _auth, builder: (_, _) => _home())
           : const _NotConfiguredScreen(),
@@ -60,7 +54,7 @@ class _FileVaultAppState extends State<FileVaultApp> {
 
   Widget _home() {
     if (!_auth.initialized) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: LoadingIndicator()));
     }
     if (!_auth.isSignedIn) return SignInScreen(auth: _auth);
     // Keyed by account so signing out drops all vault state.
