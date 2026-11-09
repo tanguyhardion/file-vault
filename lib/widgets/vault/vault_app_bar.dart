@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../controllers/vault_home_page_controller.dart';
+import '../sync/sync_widgets.dart';
 
 class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VaultHomePageController controller;
@@ -83,6 +84,7 @@ class VaultAppBar extends StatelessWidget implements PreferredSizeWidget {
             onPressed: controller.closeVault,
           ),
         ],
+        SyncStatusButton(repository: controller.vaultController.repository),
         IconButton(
           tooltip: 'Settings (Ctrl+,)',
           icon: const Icon(Icons.settings_outlined),

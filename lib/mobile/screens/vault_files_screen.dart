@@ -52,13 +52,14 @@ class _VaultFilesScreenState extends State<VaultFilesScreen> {
 
   void _showError(Object e) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(e.toString())));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(e.toString())));
   }
 
   Future<void> _refresh() async {
     try {
+      // Also retries the connection when offline.
+      await widget.appState.repository.syncAll();
       await _session.refresh();
     } catch (e) {
       _showError(e);
@@ -145,6 +146,7 @@ class _VaultFilesScreenState extends State<VaultFilesScreen> {
       appBar: AppBar(
         title: Text(_session.vault.name),
         actions: [
+          SyncStatusButton(repository: widget.appState.repository),
           IconButton(
             tooltip: 'Lock vault',
             icon: const Icon(Icons.lock_outline),

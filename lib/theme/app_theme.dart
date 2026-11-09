@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'app_accent.dart';
+
 /// The app's Material 3 Expressive theme.
 ///
 /// `material_ui` only ships part of M3 Expressive so far, so this opts into
@@ -8,17 +10,18 @@ import 'package:material_ui/material_ui.dart';
 /// more vibrant color, a rounder shape scale, buttons that morph to a squarer
 /// shape while pressed, and emphasized headline/title type.
 abstract final class AppTheme {
-  static const Color seed = Colors.teal;
+  static ThemeData light([AppAccent accent = AppAccent.defaultAccent]) =>
+      _build(Brightness.light, accent);
+  static ThemeData dark([AppAccent accent = AppAccent.defaultAccent]) =>
+      _build(Brightness.dark, accent);
 
-  static ThemeData light() => _build(Brightness.light);
-  static ThemeData dark() => _build(Brightness.dark);
-
-  static ThemeData _build(Brightness brightness) {
+  static ThemeData _build(Brightness brightness, AppAccent accent) {
     // `vibrant` keeps the seed hue but pushes chroma, matching Expressive's
     // bolder color. (`DynamicSchemeVariant.expressive` rotates the primary hue
-    // away from teal, which would change the app's identity.)
+    // away from the chosen accent.) tool/generate_icons.dart uses the same
+    // variant so the app icon matches the theme.
     final scheme = ColorScheme.fromSeed(
-      seedColor: seed,
+      seedColor: Color(accent.seedArgb),
       brightness: brightness,
       dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
     );
@@ -49,8 +52,13 @@ abstract final class AppTheme {
       // Deprecated, but false is how to opt into the 2024 (Expressive) look.
       // ignore: deprecated_member_use
       progressIndicatorTheme: const ProgressIndicatorThemeData(year2023: false),
-      searchBarTheme: const SearchBarThemeData(elevation: WidgetStatePropertyAll(0)),
-      appBarTheme: const AppBarTheme(centerTitle: false, scrolledUnderElevation: 0),
+      searchBarTheme: const SearchBarThemeData(
+        elevation: WidgetStatePropertyAll(0),
+      ),
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        scrolledUnderElevation: 0,
+      ),
     );
   }
 
@@ -67,7 +75,8 @@ abstract final class AppTheme {
 
   /// Expressive's emphasized type: heavier display, headline and large titles.
   static TextTheme _emphasize(TextTheme t) {
-    TextStyle? w(TextStyle? s, FontWeight weight) => s?.copyWith(fontWeight: weight);
+    TextStyle? w(TextStyle? s, FontWeight weight) =>
+        s?.copyWith(fontWeight: weight);
     return t.copyWith(
       displayLarge: w(t.displayLarge, FontWeight.w500),
       displayMedium: w(t.displayMedium, FontWeight.w500),

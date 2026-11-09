@@ -1,12 +1,13 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../services/cloud/cloud_vaults.dart';
+import '../services/offline/vault_repository.dart';
 import '../services/storage/vault_storage.dart';
 import '../services/vault_session.dart';
 
 /// The account's vaults and the currently unlocked one (desktop).
 class VaultController extends ChangeNotifier {
-  final CloudVaultRepository repository;
+  final VaultRepository repository;
 
   List<CloudVault> _vaults = [];
   VaultSession? _session;

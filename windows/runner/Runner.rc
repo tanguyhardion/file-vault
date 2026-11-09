@@ -52,7 +52,15 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_APP_ICON            ICON                    "resources\\app_icon.ico"
+IDI_APP_ICON            ICON                    "resources\\app_icon_teal.ico"
+// One window icon per accent color, switched at runtime (flutter_window.cpp).
+IDI_ICON_BLUE           ICON                    "resources\\app_icon_blue.ico"
+IDI_ICON_INDIGO         ICON                    "resources\\app_icon_indigo.ico"
+IDI_ICON_PURPLE         ICON                    "resources\\app_icon_purple.ico"
+IDI_ICON_PINK           ICON                    "resources\\app_icon_pink.ico"
+IDI_ICON_RED            ICON                    "resources\\app_icon_red.ico"
+IDI_ICON_ORANGE         ICON                    "resources\\app_icon_orange.ico"
+IDI_ICON_GREEN          ICON                    "resources\\app_icon_green.ico"
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -6,6 +6,7 @@ import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
 import 'cloud/cloud_vaults.dart';
+import 'offline/vault_repository.dart';
 import 'storage/vault_storage.dart';
 import 'vault_marker.dart';
 import 'vault_service.dart';
@@ -70,7 +71,7 @@ class VaultArchive {
   /// Creates a database vault named [name] from [files] (marker + .fva).
   /// The vault keeps its password. If an upload fails, nothing is kept.
   static Future<CloudVault> import(
-    CloudVaultRepository repo,
+    VaultRepository repo,
     String name,
     Map<String, Uint8List> files, {
     void Function(int done, int total)? onProgress,
@@ -92,7 +93,8 @@ class VaultArchive {
       autoBackupEnabled: autoBackup,
     );
     try {
-      final storage = repo.storageFor(vault);
+      // Straight to the server: an import is all or nothing.
+      final storage = repo.remoteStorageFor(vault);
       var done = 0;
       onProgress?.call(done, encrypted.length);
       for (final e in encrypted) {

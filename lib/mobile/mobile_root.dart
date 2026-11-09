@@ -1,14 +1,14 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../services/cloud/cloud_auth.dart';
-import '../services/cloud/cloud_vaults.dart';
+import '../services/offline/vault_repository.dart';
 import 'mobile_app_state.dart';
 import 'screens/mobile_home_screen.dart';
 
 /// Entry point of the Android UI.
 class MobileRoot extends StatefulWidget {
   final CloudAuth auth;
-  final CloudVaultRepository repository;
+  final VaultRepository repository;
 
   const MobileRoot({super.key, required this.auth, required this.repository});
 

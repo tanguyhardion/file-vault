@@ -15,7 +15,7 @@ class DeviceAuthException implements Exception {
 }
 
 /// Requires the phone's screen lock (fingerprint, face, PIN, pattern or
-/// password) as a gate in front of every vault password attempt.
+/// password): to open the app, and in front of every vault password attempt.
 class DeviceAuth {
   DeviceAuth._();
 
@@ -26,8 +26,23 @@ class DeviceAuth {
     'settings to open vaults on this phone.',
   );
 
+  static int _inProgress = 0;
+
+  /// A screen lock prompt is showing. On some Android versions the PIN or
+  /// pattern screen pauses the app, which must not count as leaving it.
+  static bool get inProgress => _inProgress > 0;
+
   /// Completes normally only if the user passed the screen lock.
   static Future<void> require({required String reason}) async {
+    _inProgress++;
+    try {
+      await _require(reason);
+    } finally {
+      _inProgress--;
+    }
+  }
+
+  static Future<void> _require(String reason) async {
     if (!await _auth.isDeviceSupported()) throw _noScreenLock;
     try {
       final ok = await _auth.authenticate(

@@ -1,8 +1,42 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 
 import 'cloud_auth.dart';
+
+/// The server couldn't be reached (no connection, DNS failure, timeout).
+/// Offline-capable operations fall back to the local copy on this.
+class CloudOfflineException implements Exception {
+  final Object? cause;
+  const CloudOfflineException([this.cause]);
+
+  @override
+  String toString() => "You're offline. This needs a connection to the server.";
+}
+
+/// HTTP client used for the server: fails fast when there is no connection
+/// instead of hanging.
+http.Client createCloudHttpClient() =>
+    IOClient(HttpClient()..connectionTimeout = const Duration(seconds: 10));
+
+/// Sends a request, turning connection failures into [CloudOfflineException].
+Future<http.Response> sendOrOffline(
+  Future<http.Response> Function() send,
+) async {
+  try {
+    // Bounds a stalled connection; uploads of notes are small.
+    return await send().timeout(const Duration(seconds: 60));
+  } on TimeoutException catch (e) {
+    throw CloudOfflineException(e);
+  } on IOException catch (e) {
+    throw CloudOfflineException(e);
+  } on http.ClientException catch (e) {
+    throw CloudOfflineException(e);
+  }
+}
 
 class CloudException implements Exception {
   final int statusCode;
@@ -26,7 +60,7 @@ class CloudClient {
   final http.Client _http;
 
   CloudClient(this.auth, {http.Client? client})
-    : _http = client ?? http.Client();
+    : _http = client ?? createCloudHttpClient();
 
   /// Rows of [table] matching [query] (PostgREST filters, `select`, `order`).
   Future<List<Map<String, dynamic>>> select(
@@ -70,8 +104,19 @@ class CloudClient {
     return _rows(res);
   }
 
-  Future<void> delete(String table, Map<String, String> query) async {
-    await _send('DELETE', table, query);
+  /// Deletes rows matching [query]; returns the deleted rows (empty if none
+  /// matched).
+  Future<List<Map<String, dynamic>>> delete(
+    String table,
+    Map<String, String> query,
+  ) async {
+    final res = await _send(
+      'DELETE',
+      table,
+      query,
+      prefer: 'return=representation',
+    );
+    return _rows(res);
   }
 
   Future<http.Response> _send(
@@ -81,9 +126,8 @@ class CloudClient {
     Object? body,
     String? prefer,
   }) async {
-    final uri = Uri.parse(
-      '${auth.baseUrl}/rest/v1/$table',
-    ).replace(queryParameters: query.isEmpty ? null : query);
+    final uri = Uri.parse('${auth.baseUrl}/rest/v1/$table')
+        .replace(queryParameters: query.isEmpty ? null : query);
 
     Future<http.Response> attempt(String token) async {
       final req = http.Request(method, uri)
@@ -97,7 +141,9 @@ class CloudClient {
         req.headers['Content-Type'] = 'application/json';
         req.body = jsonEncode(body);
       }
-      return http.Response.fromStream(await _http.send(req));
+      return sendOrOffline(
+        () async => http.Response.fromStream(await _http.send(req)),
+      );
     }
 
     var res = await attempt(await auth.accessToken());

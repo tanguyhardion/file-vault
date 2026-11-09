@@ -15,3 +15,6 @@ export 'vault/vault_widgets.dart';
 // Material 3 Expressive building blocks
 export 'expressive/loading_indicator.dart';
 export 'expressive/shaped_icon.dart';
+
+// Offline sync status and sign-out
+export 'sync/sync_widgets.dart';

@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:file_vault/controllers/file_operations_controller.dart';
 import 'package:file_vault/controllers/vault_controller.dart';
 import 'package:file_vault/services/cloud/cloud_vaults.dart';
+import 'package:file_vault/services/offline/vault_repository.dart';
 import 'package:file_vault/services/storage/vault_storage.dart';
 import 'package:file_vault/services/vault_session.dart';
 
@@ -10,7 +13,8 @@ import 'fake_supabase.dart';
 
 void main() {
   const password = 'pw';
-  late CloudVaultRepository repo;
+  late VaultRepository repo;
+  late Directory dir;
   late CloudVault cloudVault;
   late VaultController vault;
   late FileOperationsController ops;
@@ -20,12 +24,18 @@ void main() {
     final auth = server.auth();
     await auth.init();
     await auth.signIn('me@example.com', 'account');
-    repo = server.repository(auth);
+    dir = await Directory.systemTemp.createTemp('file_vault_test');
+    repo = server.offlineRepository(auth, dir);
     vault = VaultController(repo);
     cloudVault = await vault.createVault('Personal', password);
     ops = FileOperationsController(vault);
     await ops.createNewFile('note');
     await ops.saveCurrentFile('original');
+  });
+
+  tearDown(() async {
+    repo.dispose();
+    await dir.delete(recursive: true);
   });
 
   test('saves normally when the file is unchanged', () async {

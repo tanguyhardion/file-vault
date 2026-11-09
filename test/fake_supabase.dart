@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -6,6 +7,8 @@ import 'package:http/testing.dart';
 import 'package:file_vault/services/cloud/cloud_auth.dart';
 import 'package:file_vault/services/cloud/cloud_client.dart';
 import 'package:file_vault/services/cloud/cloud_vaults.dart';
+import 'package:file_vault/services/offline/local_vault_store.dart';
+import 'package:file_vault/services/offline/vault_repository.dart';
 
 class MemoryTokenStore implements TokenStore {
   final Map<String, String> values = {};
@@ -32,20 +35,38 @@ class FakeSupabase {
   final List<Map<String, dynamic>> vaults = [];
   final List<Map<String, dynamic>> files = [];
   bool requireEmailConfirmation = false;
+
+  /// Requests fail as if there were no connection.
+  bool offline = false;
   int _seq = 0;
   int requests = 0;
 
-  late final http.Client client = MockClient(_handle);
+  late final http.Client client = MockClient((req) {
+    if (offline) throw http.ClientException('Network is unreachable');
+    return _handle(req);
+  });
 
-  CloudAuth auth({TokenStore? store}) => CloudAuth(
+  /// A device with its own connection, unaffected by [offline].
+  late final http.Client otherDeviceClient = MockClient(_handle);
+
+  CloudAuth auth({TokenStore? store, bool otherDevice = false}) => CloudAuth(
     baseUrl: url,
     apiKey: key,
-    client: client,
+    client: otherDevice ? otherDeviceClient : client,
     store: store ?? MemoryTokenStore(),
   );
 
-  CloudVaultRepository repository(CloudAuth auth) =>
-      CloudVaultRepository(CloudClient(auth, client: client));
+  CloudVaultRepository repository(CloudAuth auth, {bool otherDevice = false}) =>
+      CloudVaultRepository(
+        CloudClient(auth, client: otherDevice ? otherDeviceClient : client),
+      );
+
+  /// The app's offline-capable repository, keeping its copy in [dir].
+  VaultRepository offlineRepository(CloudAuth auth, Directory dir) =>
+      VaultRepository(
+        remote: repository(auth),
+        store: LocalVaultStore(() async => dir),
+      );
 
   /// Invalidates all access tokens, as if they had expired.
   void expireAccessTokens() => _accessTokens.clear();
@@ -124,8 +145,15 @@ class FakeSupabase {
   bool _matches(Map<String, dynamic> row, Map<String, String> query) {
     for (final e in query.entries) {
       if (const {'select', 'order'}.contains(e.key)) continue;
-      if (!e.value.startsWith('eq.')) throw UnsupportedError(e.value);
-      if ('${row[e.key]}' != e.value.substring(3)) return false;
+      final value = '${row[e.key]}';
+      if (e.value.startsWith('eq.')) {
+        if (value != e.value.substring(3)) return false;
+      } else if (e.value.startsWith('in.(') && e.value.endsWith(')')) {
+        final options = e.value.substring(4, e.value.length - 1).split(',');
+        if (!options.contains(value)) return false;
+      } else {
+        throw UnsupportedError(e.value);
+      }
     }
     return true;
   }
@@ -152,9 +180,12 @@ class FakeSupabase {
         return _json(200, [for (final r in visible) _project(r, select)]);
       case 'POST':
         final values = jsonDecode(req.body) as Map<String, dynamic>;
+        if (values['id'] != null && rows.any((r) => r['id'] == values['id'])) {
+          return _conflict(); // Primary key.
+        }
         final row = <String, dynamic>{
           ...values,
-          'id': _id(),
+          'id': values['id'] ?? _id(),
           'owner_id': email,
           'created_at': DateTime.now().toUtc().toIso8601String(),
         };
@@ -203,6 +234,9 @@ class FakeSupabase {
           files.removeWhere(
             (f) => visible.any((v) => v['id'] == f['vault_id']),
           );
+        }
+        if (req.headers['Prefer'] == 'return=representation') {
+          return _json(200, [for (final r in visible) _project(r, select)]);
         }
         return http.Response('', 204);
     }

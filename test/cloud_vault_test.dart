@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:file_vault/services/cloud/cloud_auth.dart';
 import 'package:file_vault/services/cloud/cloud_vaults.dart';
+import 'package:file_vault/services/offline/vault_repository.dart';
 import 'package:file_vault/services/storage/vault_storage.dart';
 import 'package:file_vault/services/vault_archive.dart';
 import 'package:file_vault/services/vault_marker.dart';
@@ -182,6 +184,19 @@ void main() {
   });
 
   group('VaultArchive', () {
+    late Directory dir;
+    late VaultRepository app;
+
+    setUp(() async {
+      dir = await Directory.systemTemp.createTemp('file_vault_test');
+      app = server.offlineRepository(auth, dir);
+    });
+
+    tearDown(() async {
+      app.dispose();
+      await dir.delete(recursive: true);
+    });
+
     test('backup ZIP imports back as the same vault', () async {
       final vault = await repo.create('Personal', 'vault-pw');
       final session = await VaultSession.unlock(
@@ -196,7 +211,7 @@ void main() {
       final entries = VaultArchive.readZip(zip);
       expect(entries.keys, containsAll([VaultMarker.fileName, 'Note.fva']));
 
-      final restored = await VaultArchive.import(repo, 'Restored', entries);
+      final restored = await VaultArchive.import(app, 'Restored', entries);
       final restoredSession = await VaultSession.unlock(
         repo.storageFor(restored),
         restored,
@@ -217,7 +232,7 @@ void main() {
         'a.fva': Uint8List.fromList([1, 2, 3]),
         'desktop.ini': Uint8List.fromList([0]),
       };
-      final vault = await VaultArchive.import(repo, 'Old', files);
+      final vault = await VaultArchive.import(app, 'Old', files);
       expect(vault.autoBackupEnabled, isTrue);
       expect(await vault.marker.verifyPassword('old-pw'), isTrue);
       final items = await repo.storageFor(vault).listFiles();
@@ -226,7 +241,7 @@ void main() {
 
     test('refuses a folder without a marker and keeps nothing', () async {
       await expectLater(
-        VaultArchive.import(repo, 'X', {'a.fva': Uint8List(1)}),
+        VaultArchive.import(app, 'X', {'a.fva': Uint8List(1)}),
         throwsA(isA<NotAVaultException>()),
       );
       expect(server.vaults, isEmpty);

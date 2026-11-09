@@ -4,14 +4,14 @@ import 'package:flutter/widgets.dart';
 
 import '../services/app_settings_service.dart';
 import '../services/cloud/cloud_auth.dart';
-import '../services/cloud/cloud_vaults.dart';
+import '../services/offline/vault_repository.dart';
 import '../services/vault_session.dart';
 
 /// App-wide state for the Android app: the account, the unlocked vault, and
 /// inactivity locking (same setting as the desktop app).
 class MobileAppState extends ChangeNotifier with WidgetsBindingObserver {
   final CloudAuth auth;
-  final CloudVaultRepository repository;
+  final VaultRepository repository;
 
   MobileAppState({required this.auth, required this.repository});
 
@@ -84,6 +84,8 @@ class MobileAppState extends ChangeNotifier with WidgetsBindingObserver {
         // Timers don't run reliably in the background; check on resume.
         _backgroundedAt ??= DateTime.now();
       case AppLifecycleState.resumed:
+        // Pick up changes made on other devices, or send pending ones.
+        unawaited(repository.syncAll());
         final since = _backgroundedAt;
         _backgroundedAt = null;
         if (since != null &&

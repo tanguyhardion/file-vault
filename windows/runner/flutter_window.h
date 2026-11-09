@@ -3,6 +3,8 @@
 
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
+#include <flutter/method_channel.h>
+#include <flutter/standard_method_codec.h>
 
 #include <memory>
 
@@ -28,6 +30,15 @@ class FlutterWindow : public Win32Window {
 
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
+
+  // "file_vault/app_icon": switches the window (taskbar) icon to the one of
+  // the chosen accent color.
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
+      icon_channel_;
+  HICON big_icon_ = nullptr;
+  HICON small_icon_ = nullptr;
+
+  void SetAccentIcon(const std::string& accent);
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

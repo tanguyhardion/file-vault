@@ -51,14 +51,23 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
 
   void _showError(Object e) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(e.toString())));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(e.toString())));
   }
 
   Future<void> _signOut() async {
-    await _app.lock();
-    await _app.auth.signOut();
+    await _app.lock(); // Saves an open file first.
+    if (!mounted) return;
+    await signOutAndForgetDevice(
+      context,
+      auth: _app.auth,
+      repository: _app.repository,
+    );
+  }
+
+  Future<void> _refresh() async {
+    await _app.repository.syncAll();
+    await _loadVaults();
   }
 
   Future<void> _createVault() async {
@@ -183,6 +192,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
       appBar: AppBar(
         title: const Text('File Vault'),
         actions: [
+          SyncStatusButton(repository: _app.repository),
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),
@@ -230,8 +240,9 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
         title: 'No vaults yet',
         message:
             'Tap "New vault", or import an existing vault folder from the '
-            'desktop app. Vaults sync between your devices; files are only '
-            'decrypted in memory on this phone.',
+            'desktop app. Vaults sync between your devices and stay '
+            'available offline; files are only decrypted in memory on this '
+            'phone.',
       );
     } else {
       content = ListView.builder(
@@ -248,7 +259,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
       );
     }
     return RefreshIndicator(
-      onRefresh: _loadVaults,
+      onRefresh: _refresh,
       child: content is ListView
           ? content
           : LayoutBuilder(

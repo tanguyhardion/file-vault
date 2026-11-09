@@ -10,6 +10,7 @@ import '../services/app_settings_service.dart';
 import '../services/backup_service.dart';
 import '../services/cloud/cloud_auth.dart';
 import '../services/cloud/cloud_vaults.dart';
+import '../services/offline/vault_repository.dart';
 import '../services/content_cache.dart';
 import '../services/storage/vault_storage.dart';
 import '../services/vault_archive.dart';
@@ -33,7 +34,7 @@ class VaultHomePageController extends ChangeNotifier {
 
   VaultHomePageController({
     required this.auth,
-    required CloudVaultRepository repository,
+    required VaultRepository repository,
   }) : vaultController = VaultController(repository) {
     fileOperationsController = FileOperationsController(vaultController);
     searchController = vault_search.SearchController(vaultController);
@@ -327,8 +328,13 @@ class VaultHomePageController extends ChangeNotifier {
   }
 
   Future<void> signOut(BuildContext context) async {
-    closeVault();
-    await auth.signOut();
+    if (!await _saveBeforeLeaving(context) || !context.mounted) return;
+    await signOutAndForgetDevice(
+      context,
+      auth: auth,
+      repository: vaultController.repository,
+      beforeSignOut: closeVault,
+    );
   }
 
   /// Saves pending edits before switching vault. Returns false if they
@@ -346,7 +352,7 @@ class VaultHomePageController extends ChangeNotifier {
     ContentCache.instance.clear();
   }
 
-  void closeVault() async {
+  Future<void> closeVault() async {
     final session = vaultController.session;
     // Back up (if enabled) while the session is still available.
     if (session != null) await _performAutoBackupIfEnabled();
@@ -529,8 +535,7 @@ class VaultHomePageController extends ChangeNotifier {
           await showInfoDialog(
             context,
             title: 'Auto Backup Disabled',
-            message:
-                'Auto backup was disabled because no backup location was configured.',
+            message: 'Auto backup was disabled because no backup location was configured.',
           );
         }
       }

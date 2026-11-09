@@ -5,6 +5,8 @@ A simple Flutter app for securely managing encrypted notes on Windows and Androi
 ## Features
 
 - Vaults synced between Windows and Android through your account, with strong AES-GCM encryption (.fva format) and password-protected vaults
+- Works offline: every vault stays available on the device, and changes made offline are synced when you're back online
+- Accent colors: pick the app's color in Settings; the app icon follows it
 - Fast search, file organization
 - Encrypted ZIP backups (e.g. into your OneDrive folder), automatic on open/close if enabled
 - Import an existing vault folder or a backup ZIP
@@ -21,6 +23,7 @@ File Vault is designed to keep your files safe and private. Here’s how it work
 - **Unique salt and nonce per file**: Each file uses a unique salt and nonce, making brute-force and rainbow table attacks useless.
 - **Authenticated encryption**: Every file includes a 16-byte GCM tag (MAC) to ensure integrity and detect tampering.
 - **On-device crypto**: All encryption and decryption happens on your device. Only encrypted `.fva` files and each vault's marker (salt + PBKDF2 password hash) are ever uploaded; the database never receives your vault password or decrypted content.
+- **Offline copy**: For offline use, each device keeps the same encrypted files and markers in the app's private storage, as in a backup. Signing out deletes it.
 - **Two separate passwords**: your account (email + password) only lets a device read and write your encrypted rows (enforced by row-level security). Each vault still has its own password, which never leaves the device.
 - **Encrypted backups**: Backups are always encrypted. You can safely store them anywhere, including cloud folders (e.g., OneDrive, iCloud).
 - **Zero knowledge**: The app never knows or stores your vault password or unencrypted data. As with any cloud copy, someone with access to the database could try to guess a vault password offline against its hash, so use a strong one.
@@ -71,21 +74,33 @@ flutter build apk --release
 
 Copy `build/app/outputs/flutter-apk/app-release.apk` to your phone and open it (allow installing from unknown sources), or with the phone connected over USB run `flutter install`.
 
-Every vault password attempt also requires the phone's screen lock (fingerprint, face, PIN, pattern or password) *before* the password is checked, so passwords can't be guessed on the phone without it. Vaults can't be opened on a phone with no screen lock.
+Opening the app requires the phone's screen lock (fingerprint, face, PIN, pattern or password), and so does coming back to it after more than 30 seconds in the background. Every vault password attempt also requires the screen lock *before* the password is checked, so passwords can't be guessed on the phone without it. The app can't be used on a phone with no screen lock.
+
+The home screen icon follows the accent color chosen in Settings. It changes when you leave the app; some launchers move or remove home screen shortcuts when it does.
 
 ### Editing on several devices
 
-- Every file is read fresh from the database when opened.
+- Every file is checked against the database when opened (and only downloaded if it changed).
 - Each file has a version number that the database bumps on every change. Saving checks that the file wasn't changed on another device since you opened it. If it was, you choose **Reload** or **Overwrite**.
 - Pending edits are saved when the app goes to the background or auto-locks.
+
+### Offline
+
+- Every vault is kept on each device and refreshed in the background, so vaults open, and files can be read, created, edited, renamed and deleted without a connection. Creating, importing or deleting a vault still needs one.
+- Changes made offline are sent as soon as the server can be reached again. The cloud button in the toolbar shows the state (offline, changes waiting, synced); click it to sync now.
+- If a file was changed both offline here and on another device, the other device's version is kept and yours is added next to it as `<name> (conflict <date>)`, so no edit is lost. An edit made here beats a delete made elsewhere, and the other way round.
+- Signing out first tries to sync; if changes still can't be sent, you're asked before they're discarded.
 
 ## Project Structure
 
 ```
 lib/           # App code (desktop UI, shared services)
 lib/services/cloud/  # Supabase auth, REST client, vault storage
+lib/services/offline/  # Offline copy of the vaults and syncing
+lib/theme/     # Material 3 Expressive theme and accent colors
 lib/mobile/    # Android UI
 supabase/      # Database schema (migrations)
+tool/          # App icon generator
 android/       # Android build files
 windows/       # Windows build files
 build/         # Generated assets
@@ -96,6 +111,7 @@ build/         # Generated assets
 - Clean build: `flutter clean`
 - Update dependencies: `flutter pub get`
 - Run tests: `flutter test`
+- Regenerate the app icons (one per accent color, Android and Windows) from `assets/icon.png`: `dart run tool/generate_icons.dart`
 
 ## Contributing
 

@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../theme/app_accent.dart';
+
 class AppSettingsService {
   AppSettingsService._();
 
@@ -19,6 +21,19 @@ class AppSettingsService {
   static Future<void> setInactivityLockMinutes(int minutes) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(prefsKeyInactivityLockMinutes, _clamp(minutes));
+  }
+
+  static const prefsKeyAccent = 'accentColor';
+
+  /// The accent color of the app (and its icon) on this device.
+  static Future<AppAccent> getAccent() async {
+    final prefs = await SharedPreferences.getInstance();
+    return AppAccent.fromId(prefs.getString(prefsKeyAccent));
+  }
+
+  static Future<void> setAccent(AppAccent accent) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(prefsKeyAccent, accent.id);
   }
 
   static int _clamp(int minutes) {

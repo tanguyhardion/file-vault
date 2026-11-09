@@ -1,4 +1,5 @@
 import 'package:file_vault/services/app_settings_service.dart';
+import 'package:file_vault/theme/app_accent.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,5 +25,16 @@ void main() {
 
     await AppSettingsService.setInactivityLockMinutes(999);
     expect(await AppSettingsService.getInactivityLockMinutes(), 240);
+  });
+
+  test('accent color defaults to teal and persists', () async {
+    expect(await AppSettingsService.getAccent(), AppAccent.teal);
+    await AppSettingsService.setAccent(AppAccent.purple);
+    expect(await AppSettingsService.getAccent(), AppAccent.purple);
+  });
+
+  test('an unknown stored accent falls back to the default', () async {
+    SharedPreferences.setMockInitialValues({'accentColor': 'chartreuse'});
+    expect(await AppSettingsService.getAccent(), AppAccent.defaultAccent);
   });
 }

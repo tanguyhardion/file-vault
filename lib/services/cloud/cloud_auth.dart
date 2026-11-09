@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+import 'cloud_client.dart';
+
 /// Persists the session's refresh token.
 abstract class TokenStore {
   Future<String?> read(String key);
@@ -69,7 +71,7 @@ class CloudAuth extends ChangeNotifier {
     required this.apiKey,
     http.Client? client,
     this._store = const SecureTokenStore(),
-  }) : _http = client ?? http.Client();
+  }) : _http = client ?? createCloudHttpClient();
 
   bool get initialized => _initialized;
   bool get isSignedIn => _refreshToken != null;
@@ -184,16 +186,15 @@ class CloudAuth extends ChangeNotifier {
     Map<String, dynamic> body, {
     bool throwOnError = true,
   }) async {
-    final http.Response res;
-    try {
-      res = await _http.post(
+    // Throws CloudOfflineException without a connection; a refresh that fails
+    // that way keeps the session (only the server can revoke it).
+    final res = await sendOrOffline(
+      () => _http.post(
         Uri.parse('$baseUrl$path'),
         headers: {'apikey': apiKey, 'Content-Type': 'application/json'},
         body: jsonEncode(body),
-      );
-    } on Exception catch (e) {
-      throw CloudAuthException('Could not reach the server: $e');
-    }
+      ),
+    );
     if (throwOnError && res.statusCode >= 400) {
       throw CloudAuthException(_errorMessage(res));
     }

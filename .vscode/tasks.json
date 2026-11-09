@@ -20,7 +20,7 @@
     {
       "label": "flutter: launcher icons",
       "type": "shell",
-      "command": "flutter pub run flutter_launcher_icons",
+      "command": "dart run tool/generate_icons.dart",
       "isBackground": false,
       "problemMatcher": [],
       "group": "build"

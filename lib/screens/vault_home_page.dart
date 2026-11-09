@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../controllers/vault_home_page_controller.dart';
 import '../services/cloud/cloud_auth.dart';
-import '../services/cloud/cloud_vaults.dart';
+import '../services/offline/vault_repository.dart';
 import '../mixins/vault_event_handlers.dart';
 import '../shortcuts/vault_intents.dart';
 import '../widgets/vault/vault_app_bar.dart';
@@ -12,7 +12,7 @@ import '../widgets/vault/vault_main_content.dart';
 
 class VaultHomePage extends StatefulWidget {
   final CloudAuth auth;
-  final CloudVaultRepository repository;
+  final VaultRepository repository;
 
   const VaultHomePage({
     super.key,
